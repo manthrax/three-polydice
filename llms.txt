@@ -1,0 +1,144 @@
+# PolyDice - LLM Quick Reference & API Specification
+> Procedural Polyhedral 3D Dice Simulation Engine
+
+## System Overview
+- **Architecture**: Standalone ES6 JavaScript Module (`polydice.js`).
+- **Dependencies**: Takes `THREE` (Three.js) and `Ammo` (Bullet WebAssembly) in the constructor.
+- **Architectural Boundary**:
+  - **Host Application**: Creates and manages the Three.js `Scene`, `Camera`, `WebGLRenderer`, render loop (`dice.update(deltaTime)`), DOM UI, and camera controls.
+  - **PolyDice Module**: Owns the Ammo.js rigid body simulation, tray physics boundaries, procedural geometry construction (all 14 polyhedra with multi-segment fillet chamfers), dynamic 2048² canvas diffuse & engraved Sobel normal map generation, PBR physical material shaders, 3D positional Web Audio synthesis, headless pre-simulation outcome solver, roll Promises & events, and GLTF export.
+- **Zero Static Assets**: All 14 geometries (`d4`..`d120`), UV layouts, and tactile engraved normal maps are synthesized purely from math at runtime.
+
+## Supported Dice Keys (14 Polyhedra)
+`d4`, `d6`, `d8`, `d10`, `d12`, `d14`, `d16`, `d20`, `d24`, `d30`, `d48`, `d60`, `d100`, `d120`
+
+## Module Initialization & Setup
+```javascript
+import { PolyDice, DICE_MATERIALS, PolyhedronPoints } from './polydice.js';
+
+// Host instantiates PolyDice passing THREE and Ammo dependencies
+const dice = new PolyDice({
+  THREE,                       // Three.js instance
+  Ammo: window.Ammo,           // Ammo.js loader or initialized module
+  ConvexHull,                  // Optional: Three.js ConvexHull addon
+  GLTFExporter,                // Optional: Three.js GLTFExporter addon
+  scene,                       // Host Three.js Scene (dice.group automatically mounts)
+  tray: {                      // Physics arena boundaries
+    width: 12.0,
+    depth: 12.0,
+    wallHeight: 2.4
+  },
+  audio: true,                 // Built-in Web Audio collision synthesizer toggle
+  audioListener,               // Optional: THREE.AudioListener attached to camera
+  defaultMaterial: 'ruby',     // 'obsidian' | 'gold' | 'silver' | 'ruby' | 'emerald' | 'sapphire' | 'pearl'
+  defaultBevel: 0.20,          // 0.0 (Off/Sharp) | 0.10 (Subtle) | 0.20 (Round)
+  defaultBevelSegments: 4      // 1 (flat chamfer) .. 4 (smooth fillet dome)
+});
+
+// Initialize Ammo physics world and static tray boundaries
+await dice.init();
+
+// Optional: create standard visual felt & walnut tray enclosure
+dice.createDefaultVisualTray();
+
+// In host render loop:
+function animate() {
+  requestAnimationFrame(animate);
+  const deltaTime = Math.min(clock.getDelta(), 0.05);
+  dice.update(deltaTime);      // Steps Ammo physics, syncs meshes, updates audio & settling
+  controls.update();
+  renderer.render(scene, camera);
+}
+```
+
+## Core Instance Methods
+
+### 1. Mesh & Asset Generation
+- `dice.createDieMesh(type, options = { bevel, bevelSegments, material, scale })`
+  Returns an independent `THREE.Mesh` with procedural geometry, textures, and material (ready to place in scene, on pedestal, or in game).
+- `dice.getDiceAsset(type, options)`
+  Returns cached asset record `{ type, geometry, material, numFaces, faceDescriptors, faceInfos, cols, rows, diffuseCanvas, normalCanvas }`.
+- `dice.getDebugCanvases(type, options)`
+  Generates and returns `{ diffuseCanvas, normalCanvas }` (2048² canvases) for 2D inspection.
+- `dice.setBevel(bevelRatio, segments = null)`
+  Updates edge chamfer/fillet ratio across generated dice.
+- `dice.setBevelSegments(segments)`
+  Sets edge subdivision segments (1 = flat chamfer, 2..4 = rounded spherical corner domes).
+- `dice.setDiceMaterial(materialName)`
+  Switches active finish across all dice (`'obsidian'`, `'gold'`, `'silver'`, `'ruby'`, `'emerald'`, `'sapphire'`, `'pearl'`). Updates all active dice in the tray in real time without needing a reroll.
+- `dice.setDieMaterial(dieOrId, materialName)`
+  Assigns a material to a specific die instance (by die record, mesh, or `id`), immediately updating its material in real time.
+- `dice.getDieMaterial(dieOrId)`
+  Returns the active material key for a specific die.
+- `dice.selectDie(dieOrId)` / `dice.deselectDie()` / `dice.getSelectedDie()`
+  Selects or deselects a die, rendering a bright cyan selection outline halo in the 3D scene and emitting `selectionChange`.
+- **Parameter Caching**: Textures and materials are uniquely cached in memory by parameter tuple `(${type}_${bevel}_${bevelSegments}_${materialKey})`, ensuring zero-latency material switching with zero frame drops or redundant re-baking.
+
+### 2. Rolling & Simulation
+- `await dice.roll({ power = 1.0, targets = null, dice = null })`
+  Clears tray, spawns pool, hurls dice with randomized tumble & forward velocity, and returns a `Promise<RollResult>` that resolves when dice settle.
+- `await dice.rollPredeterminedDice(diceTypes, targetValues, power = 1.0)`
+  Executes a physics simulation guaranteed to land on predetermined outcomes via headless pre-simulation and rotational offset replay.
+- `dice.parseTargetRollString(input)`
+  Parses strings like `"d20: 20"`, `"2d6: 6, 6"`, `"d4: 4, d8: 8, d20: 19"`, `"d20=20"`, or JSON arrays/objects into `{ dice, targets }`.
+- `dice.update(deltaTime)`
+  Call inside `requestAnimationFrame`. Steps physics, interpolates transforms, detects collisions, triggers audio, and checks settling.
+- `dice.setDicePool(typesArray)` / `dice.getDicePool()`
+  Sets or gets the active rolling pool (e.g. `['d20', 'd6', 'd6']`).
+- `dice.addDieToPool(type)` / `dice.removeDieFromPool(index)` / `dice.clearActiveDice()`
+  Manipulates the active tray pool and clears rigid bodies.
+- `dice.getLastRollResult()`
+  Returns the latest roll outcome object.
+- `dice.isRolling()`
+  Returns boolean state indicating if dice are actively in motion.
+
+### 3. Audio & Showcase
+- `dice.setSoundEnabled(boolean)` / `dice.isSoundEnabled()`
+  Toggles Web Audio collision sounds.
+- `dice.toggleShowcaseMode(camera)` / `dice.enterShowcaseMode(camera)` / `dice.exitShowcaseMode()`
+  Glides settled dice into an upright camera-facing showcase lineup with luminous silhouette outlines.
+- `dice.generateSnapshot(renderer, camera, options = { width: 1200, height: 675, exposure: 1.05 })`
+  Produces a calibrated 16:9 composite result card canvas with high-res studio lighting, total score, and summary badge.
+- `dice.getFaceCentroids(type)`
+  Returns an array of `{ value, normal, centroid }` sorted by numerical face value (index 0 = face 1, index 1 = face 2, etc.) for headless face-up detection.
+- `dice.createFaceCentroidPoints(type, options = { color: 0x00ffcc, size: 0.18 })`
+  Returns a companion `THREE.Points` cloud whose vertices are the face centroids ordered $1 \dots N$.
+- `await dice.exportGLTF(options = { mesh, types, binary: true, emitCentroids: false })`
+  Exports binary `.glb` 3D model Blob of active dice pool or specific die mesh. When `emitCentroids: true`, companion centroid point clouds and embedded `userData.faceCentroids` metadata are included.
+- `dice.dispose()`
+  Fully tears down the instance: frees all GPU textures, materials, and geometries in VRAM; destroys Ammo.js WASM heap convex shapes and static rigid bodies; removes `dice.group` from the scene; closes internal Web Audio context; and clears event listeners. Essential for SPA unmounting, test cleanup, and avoiding memory leaks.
+
+### 4. Event Subscriptions
+- `dice.on('rollStart', ({ pool, power, targets }) => ...)`
+- `dice.on('rollComplete', (result) => ...)`
+- `dice.on('collision', ({ type, pos, intensity, mass }) => ...)`
+
+## Output Schema (`rollComplete` / `dice.getLastRollResult()`)
+```json
+{
+  "timestamp": "ISO-8601 string",
+  "total": 12,
+  "diceCount": 2,
+  "dice": [
+    { "id": 1, "type": "d6", "result": 6 },
+    { "id": 2, "type": "d6", "result": 6 }
+  ],
+  "breakdown": { "d6": [6, 6] },
+  "summary": "2d6: [6, 6] (12)"
+}
+```
+
+## Backward Compatibility & Global Window Aliases
+For server webhooks, existing scripts, and backward compatibility, the following remain accessible on `window`:
+- `window.PolyDice`: The `PolyDice` class constructor.
+- `window.diceEngine`: Active `PolyDice` engine instance.
+- `window.rollDicePool(power, targets)`
+- `window.rollPredeterminedDice(diceTypes, targetValues, power)`
+- `window.parseTargetRollString(str)`
+- `window.setBevel(bevel, segments)`
+- `window.setDiceMaterial(materialName)`
+- `window.DICE_MATERIALS`: Dictionary of PBR material specifications.
+- **Trigger Server Roll via Event**:
+  `window.dispatchEvent(new CustomEvent('serverDiceRoll', { detail: '2d6: 6, 6' }));`
+- **Listen to Roll Result**:
+  `window.addEventListener('diceRollComplete', (e) => console.log(e.detail));`

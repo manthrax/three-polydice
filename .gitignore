@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Temporary and Scratch Files
+*.tmp
+temp_*
+extract*.py
+check.py
+*.log
+
+# OS & Editor Metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.bak

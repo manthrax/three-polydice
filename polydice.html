@@ -1,0 +1,2817 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Polyhedral Dice Physics & Engraved Normal Map Simulator</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #090b0e;
+      --panel-bg: rgba(15, 19, 26, 0.88);
+      --panel-border: rgba(97, 175, 239, 0.22);
+      --accent: #61afef;
+      --accent-gold: #e5c07b;
+      --accent-glow: rgba(97, 175, 239, 0.35);
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --tray-felt: #051a0e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: var(--bg-dark);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      z-index: 0;
+      overflow: hidden;
+      background: #11151f;
+      pointer-events: auto;
+    }
+
+    #dice-renderer-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
+      display: block !important;
+      z-index: 0;
+      pointer-events: auto;
+      touch-action: none;
+    }
+
+    /* Top Navigation Header (Minimal & Compact) */
+    header {
+      position: absolute;
+      top: 10px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .brand {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(10, 13, 18, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 4px 10px;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .brand-icon {
+      font-size: 16px;
+      filter: drop-shadow(0 0 5px var(--accent));
+    }
+
+    .brand-title {
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      color: #fff;
+    }
+
+    .header-actions {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Mode Switcher Tabs */
+    .tab-switch {
+      display: flex;
+      background: rgba(10, 13, 18, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 2px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn:hover {
+      color: #fff;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #0b0d11;
+      box-shadow: 0 2px 6px var(--accent-glow);
+    }
+
+    /* Minimal & Compact Floating Controls Panel */
+    #ui-panel {
+      position: absolute;
+      top: 48px;
+      left: 12px;
+      width: 175px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 20;
+      background: rgba(10, 13, 18, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 10px;
+      padding: 8px 10px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #ui-panel.collapsed {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      overflow: hidden;
+      border-radius: 8px;
+      cursor: pointer;
+      background: rgba(10, 13, 18, 0.75);
+    }
+
+    #ui-panel.collapsed>*:not(.panel-header-row) {
+      display: none !important;
+    }
+
+    #ui-panel.collapsed .panel-header-row {
+      width: 100%;
+      height: 100%;
+    }
+
+    #ui-panel.collapsed .section-title {
+      display: none !important;
+    }
+
+    .panel-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-toggle-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      cursor: pointer;
+      padding: 1px 4px;
+      border-radius: 4px;
+      transition: color 0.15s;
+    }
+
+    .panel-toggle-btn:hover {
+      color: #fff;
+    }
+
+    #ui-panel.collapsed .panel-toggle-btn {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--accent);
+    }
+
+    .section-title {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .dice-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 3px;
+    }
+
+    .die-btn {
+      background: rgba(22, 26, 34, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: #c9d1d9;
+      padding: 5px 1px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 10px;
+      text-align: center;
+      transition: all 0.12s ease;
+    }
+
+    .die-btn:hover {
+      background: #252c3a;
+      border-color: var(--accent);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .die-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0d0e11;
+      box-shadow: 0 0 6px var(--accent-glow);
+    }
+
+    /* Global Sleek Rounded Scrollbars */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 999px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      transition: background 0.15s ease;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+    }
+
+    /* Active Dice Pool Chips */
+    .pool-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      min-height: 24px;
+      max-height: 52px;
+      overflow-y: auto;
+      padding: 3px 5px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      border-radius: 5px;
+      align-items: center;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(97, 175, 239, 0.4) transparent;
+    }
+
+    .pool-container::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .pool-container::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 999px;
+      margin: 3px 0;
+    }
+
+    .pool-container::-webkit-scrollbar-thumb {
+      background: rgba(97, 175, 239, 0.4);
+      border-radius: 999px;
+      transition: all 0.15s ease;
+    }
+
+    .pool-container::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent-glow);
+    }
+
+    .pool-chip {
+      background: rgba(97, 175, 239, 0.15);
+      border: 1px solid rgba(97, 175, 239, 0.35);
+      color: #fff;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+
+    .pool-chip:hover {
+      background: rgba(235, 87, 87, 0.25);
+      border-color: #eb5757;
+      color: #ff9494;
+    }
+
+    .pool-chip .remove-x {
+      font-size: 9px;
+      opacity: 0.6;
+    }
+
+    /* Material Finish Selector Grid & Swatches */
+    .mat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+    }
+
+    .mat-btn {
+      background: rgba(22, 27, 36, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      color: var(--text-muted);
+      padding: 3px 4px;
+      border-radius: 4px;
+      font-size: 9.5px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mat-btn:hover {
+      background: #27303f;
+      color: #fff;
+      border-color: rgba(97, 175, 239, 0.4);
+    }
+
+    .mat-btn.active {
+      background: rgba(97, 175, 239, 0.18);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 6px rgba(97, 175, 239, 0.25);
+    }
+
+    .mat-swatch {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex: none;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Quick Preset Buttons */
+    .presets-row {
+      display: flex;
+      gap: 3px;
+    }
+
+    .small-btn {
+      flex: 1;
+      background: rgba(28, 33, 43, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      padding: 3px 1px;
+      border-radius: 4px;
+      font-size: 9.5px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.12s;
+    }
+
+    .small-btn:hover {
+      background: #272f3d;
+      color: #fff;
+      border-color: #4b5563;
+    }
+
+    /* Primary Roll Action Button with Dynamic Charge Progress */
+    .roll-btn {
+      position: relative;
+      overflow: hidden;
+      background: #182232;
+      border: 1px solid rgba(97, 175, 239, 0.35);
+      color: #fff;
+      padding: 7px 8px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+      transition: all 0.15s ease;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .roll-charge-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(97, 175, 239, 0.45) 0%, rgba(229, 192, 123, 0.85) 100%);
+      pointer-events: none;
+      transition: width 0.04s linear;
+      z-index: 1;
+    }
+
+    .roll-btn-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      pointer-events: none;
+    }
+
+    .roll-subtext {
+      font-size: 8.5px;
+      font-weight: 500;
+      opacity: 0.65;
+      letter-spacing: 0.01em;
+    }
+
+    .roll-btn:hover {
+      border-color: var(--accent);
+      box-shadow: 0 3px 14px rgba(97, 175, 239, 0.3);
+    }
+
+    .roll-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* Floating Roll Results Card (Minimal & Compact) */
+    #result-banner {
+      position: absolute;
+      top: 56px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 13, 18, 0.75);
+      border: 1px solid rgba(229, 192, 123, 0.35);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 5px 14px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 10px rgba(229, 192, 123, 0.1);
+      z-index: 20;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    #result-banner.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .result-total {
+      font-family: 'Cinzel', serif;
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--accent-gold);
+      text-shadow: 0 0 12px rgba(229, 192, 123, 0.5);
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .result-total-label {
+      font-size: 11px;
+      font-family: 'Outfit', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .result-breakdown {
+      font-size: 13px;
+      font-weight: 500;
+      color: #abb2bf;
+      border-left: 1px solid #333a46;
+      padding-left: 14px;
+      max-width: 340px;
+      line-height: 1.4;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .icon-action-btn {
+      background: #1c212b;
+      border: 1px solid #2d333f;
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .icon-action-btn:hover {
+      background: #272f3d;
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .icon-action-btn.active {
+      background: var(--accent);
+      color: #0b0d11;
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    /* Snapshot & Showcase Modal Overlay */
+    #snapshot-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(5, 7, 10, 0.78);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+
+    #snapshot-modal.open {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-card {
+      background: rgba(14, 18, 25, 0.95);
+      border: 1px solid rgba(229, 192, 123, 0.35);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 24px rgba(229, 192, 123, 0.15);
+      border-radius: 14px;
+      padding: 16px 20px;
+      max-width: 90vw;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .modal-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent-gold);
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .modal-close-btn:hover {
+      color: #fff;
+    }
+
+    .snapshot-preview-img {
+      max-width: 100%;
+      max-height: 55vh;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      justify-content: flex-end;
+    }
+
+    /* Documentation & Configurator Modals */
+    #docs-modal,
+    #config-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    #docs-modal.open,
+    #config-modal.open {
+      display: flex;
+      opacity: 1;
+    }
+
+    .cfg-section {
+      display: none;
+    }
+
+    .cfg-section.active {
+      display: block;
+    }
+
+    .docs-card {
+      background: rgba(14, 18, 25, 0.97);
+      border: 1px solid rgba(97, 175, 239, 0.35);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 24px rgba(97, 175, 239, 0.15);
+      border-radius: 14px;
+      width: 860px;
+      max-width: 92vw;
+      height: 84vh;
+      max-height: 850px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .docs-header {
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(10, 13, 18, 0.7);
+    }
+
+    .docs-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .docs-title {
+      font-family: 'Cinzel', serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .docs-badge {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(97, 175, 239, 0.15);
+      border: 1px solid rgba(97, 175, 239, 0.35);
+      border-radius: 4px;
+      padding: 1px 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .docs-tabs-nav {
+      display: flex;
+      gap: 6px;
+      padding: 8px 18px;
+      background: rgba(18, 22, 30, 0.6);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .docs-tab-btn {
+      background: rgba(28, 34, 46, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .docs-tab-btn:hover {
+      color: #fff;
+      border-color: rgba(97, 175, 239, 0.4);
+    }
+
+    .docs-tab-btn.active {
+      background: var(--accent);
+      color: #0a0d12;
+      border-color: var(--accent);
+      font-weight: 700;
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    .docs-content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 20px;
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: #c9d1d9;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(97, 175, 239, 0.4) transparent;
+    }
+
+    .docs-section {
+      display: none;
+    }
+
+    .docs-section.active {
+      display: block;
+    }
+
+    .docs-section h2 {
+      font-size: 15px;
+      color: #fff;
+      margin-top: 0;
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .docs-section h3 {
+      font-size: 13px;
+      color: var(--accent-gold);
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+
+    .docs-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 11px;
+    }
+
+    .docs-table th,
+    .docs-table td {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 5px 8px;
+      text-align: left;
+    }
+
+    .docs-table th {
+      background: rgba(22, 28, 38, 0.9);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .docs-table tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .docs-code-block {
+      background: #090b0e;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 11px;
+      color: #98c379;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 8px 0;
+    }
+
+    .docs-inline-code {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 3px;
+      padding: 1px 4px;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 11px;
+      color: #e5c07b;
+    }
+
+    /* JSON Drawer */
+    #json-drawer {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      width: 380px;
+      max-height: 240px;
+      background: rgba(13, 16, 22, 0.95);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 12px;
+      z-index: 20;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #json-drawer.open {
+      display: flex;
+    }
+
+    #json-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #98c379;
+      background: #090b0e;
+      border: 1px solid #20242c;
+      border-radius: 6px;
+      padding: 8px;
+      overflow-y: auto;
+      max-height: 160px;
+      white-space: pre-wrap;
+    }
+
+    /* Texture Previews in Inspector Mode */
+    #previews {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      display: flex;
+      gap: 12px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(12px);
+      z-index: 20;
+      transition: opacity 0.2s;
+    }
+
+    .preview-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .preview-canvas {
+      width: 140px;
+      height: 140px;
+      background: #111;
+      border: 1px solid #21252b;
+      border-radius: 6px;
+    }
+
+    .status-pill {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(16, 20, 27, 0.85);
+      border: 1px solid #2d333f;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #98c379;
+    }
+
+    .status-dot.rolling {
+      background: #e5c07b;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(0.9);
+        opacity: 0.6;
+      }
+
+      50% {
+        transform: scale(1.3);
+        opacity: 1;
+      }
+
+      100% {
+        transform: scale(0.9);
+        opacity: 0.6;
+      }
+    }
+
+    .sound-btn.muted {
+      color: #eb5757;
+      border-color: rgba(235, 87, 87, 0.4);
+    }
+  </style>
+
+  <!-- Ammo.js Physics Engine -->
+  <script src="https://cdn.jsdelivr.net/gh/kripken/ammo.js@main/builds/ammo.js"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.186.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.186.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body>
+
+  <!-- Primary 3D WebGL Viewport Canvas Container -->
+  <div id="canvas-container">
+    <canvas id="dice-renderer-canvas"></canvas>
+  </div>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🎲</div>
+      <div class="brand-title">PolyDice</div>
+    </div>
+
+    <div class="header-actions">
+      <div class="tab-switch">
+        <button id="tab-tray" class="tab-btn active" title="Physics-driven dice tray">
+          <span>🎯</span> Tray
+        </button>
+        <button id="tab-inspector" class="tab-btn" title="Inspect individual polyhedral die">
+          <span>🔍</span> Inspector
+        </button>
+      </div>
+
+      <button id="config-btn" class="tab-btn"
+        style="background: rgba(13,16,22,0.9); border: 1px solid rgba(97, 175, 239, 0.4); color: var(--accent);"
+        title="Open Theming & Library Configurator (Generate JS Code, Target Strings, JSON)">
+        <span>⚙️</span> Theming & Config
+      </button>
+
+      <button id="docs-btn" class="tab-btn"
+        style="background: rgba(13,16,22,0.9); border: 1px solid var(--panel-border);"
+        title="View features, architecture & API documentation (Human & LLM friendly)">
+        <span>📖</span> Docs & API
+      </button>
+
+      <button id="sound-btn" class="tab-btn sound-btn"
+        style="background: rgba(13,16,22,0.9); border: 1px solid var(--panel-border);"
+        title="Toggle collision sound effects">
+        <span>🔊</span> Audio
+      </button>
+    </div>
+  </header>
+
+  <!-- Physics & Inspector UI Panel (Compact & Minimal) -->
+  <div id="ui-panel">
+    <div class="panel-header-row">
+      <div class="section-title" style="margin: 0;">Dice Controls</div>
+      <button class="panel-toggle-btn" id="panel-toggle-btn" title="Collapse / Expand panel">◀</button>
+    </div>
+
+    <div id="pool-section">
+      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Active Pool</span>
+        <div style="display: flex; gap: 4px;">
+          <button id="randomize-mats-btn" class="small-btn"
+            style="flex: none; padding: 1px 6px; background: rgba(97, 175, 239, 0.15); border-color: rgba(97, 175, 239, 0.35); color: var(--accent);"
+            title="Shuffle random materials across all dice in pool">🎲 Shuffle</button>
+          <button id="clear-pool-btn" class="small-btn" style="flex: none; padding: 1px 6px;">Clear</button>
+        </div>
+      </div>
+      <div class="pool-container" id="dice-pool-chips">
+        <span style="font-size: 10px; color: var(--text-muted);">Click dice to add</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title" id="die-selector-title">Dice Selection</div>
+      <div class="dice-grid" id="dice-selector">
+        <button class="die-btn" data-type="d4">d4</button>
+        <button class="die-btn" data-type="d6">d6</button>
+        <button class="die-btn" data-type="d8">d8</button>
+        <button class="die-btn" data-type="d10">d10</button>
+        <button class="die-btn" data-type="d12">d12</button>
+        <button class="die-btn" data-type="d14">d14</button>
+        <button class="die-btn" data-type="d16">d16</button>
+        <button class="die-btn" data-type="d20">d20</button>
+        <button class="die-btn" data-type="d24">d24</button>
+        <button class="die-btn active" data-type="d30">d30</button>
+        <button class="die-btn" data-type="d48">d48</button>
+        <button class="die-btn" data-type="d60">d60</button>
+        <button class="die-btn" data-type="d100">d100</button>
+        <button class="die-btn" data-type="d120">d120</button>
+      </div>
+    </div>
+
+    <div id="bevel-control-section" style="margin-top: 2px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+        <span class="section-title" style="margin: 0;">Edges / Bevel</span>
+        <span id="bevel-seg-label" style="font-size: 8.5px; color: var(--accent); font-weight: 600;">4 seg</span>
+      </div>
+      <div class="tab-switch" id="bevel-switch"
+        style="width: 100%; display: flex; justify-content: space-between; padding: 2px; margin-bottom: 3px;">
+        <button class="tab-btn" data-bevel="0.0"
+          style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;">Off</button>
+        <button class="tab-btn" data-bevel="0.10"
+          style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;">Subtle</button>
+        <button class="tab-btn active" data-bevel="0.20"
+          style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;">Round</button>
+      </div>
+      <div id="bevel-segments-row"
+        style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
+        <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Segments</span>
+        <div class="tab-switch" id="bevel-segments-switch"
+          style="flex: 1; display: flex; justify-content: space-between; padding: 1px;">
+          <button class="tab-btn" data-seg="1"
+            style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">1</button>
+          <button class="tab-btn" data-seg="2"
+            style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">2</button>
+          <button class="tab-btn" data-seg="3"
+            style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">3</button>
+          <button class="tab-btn active" data-seg="4"
+            style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">4</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="material-control-section" style="margin-top: 3px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+        <span class="section-title" style="margin: 0;">Material Finish</span>
+        <span id="material-label" style="font-size: 8.5px; color: var(--accent-gold); font-weight: 600;">Translucent
+          Ruby</span>
+      </div>
+      <div class="mat-grid" id="material-selector">
+        <button class="mat-btn" data-mat="obsidian" title="Obsidian Charcoal Resin with Silver Inlay">
+          <span class="mat-swatch" style="background: #1c2027; border: 1px solid #4a5260;"></span>
+          <span>Obsidian</span>
+        </button>
+        <button class="mat-btn" data-mat="gold" title="Forged Royal Gold with Obsidian Inlay">
+          <span class="mat-swatch"
+            style="background: linear-gradient(135deg, #f5d061, #b8860b); border: 1px solid #ffe599;"></span>
+          <span>Gold</span>
+        </button>
+        <button class="mat-btn" data-mat="silver" title="Forged Sterling Silver with Obsidian Inlay">
+          <span class="mat-swatch"
+            style="background: linear-gradient(135deg, #ffffff 0%, #b8c8d8 50%, #8898a8 100%); border: 1px solid #d8e8f8;"></span>
+          <span>Silver</span>
+        </button>
+        <button class="mat-btn active" data-mat="ruby" title="Translucent Ruby Gem with Gold Inlay">
+          <span class="mat-swatch"
+            style="background: radial-gradient(circle at 35% 35%, #ff3355, #880018); border: 1px solid #ff7799;"></span>
+          <span>Ruby</span>
+        </button>
+        <button class="mat-btn" data-mat="emerald" title="Imperial Emerald Jade with Gold Leaf Inlay">
+          <span class="mat-swatch"
+            style="background: radial-gradient(circle at 35% 35%, #19a56f, #093b26); border: 1px solid #45e0a0;"></span>
+          <span>Emerald</span>
+        </button>
+        <button class="mat-btn" data-mat="sapphire" title="Celestial Sapphire with Ice White Inlay">
+          <span class="mat-swatch"
+            style="background: radial-gradient(circle at 35% 35%, #2d68c4, #0b1a3d); border: 1px solid #66a5ff;"></span>
+          <span>Sapphire</span>
+        </button>
+        <button class="mat-btn" data-mat="pearl" title="Opalescent Mother of Pearl with Iridescent Rainbow Sheen"
+          style="grid-column: span 3; justify-content: center;">
+          <span class="mat-swatch"
+            style="background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ffe4f0 35%, #d0f8ea 70%, #ded0f8 100%); border: 1px solid #eed8ea;"></span>
+          <span>Opalescent Pearl</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="presets-section">
+      <div class="section-title">Presets</div>
+      <div class="presets-row" style="flex-wrap: wrap; gap: 4px;">
+        <button class="small-btn preset-chip" data-preset="all14" id="preset-all14"
+          style="background: rgba(97, 175, 239, 0.2); border-color: rgba(97, 175, 239, 0.4); color: var(--accent); font-weight: 700;"
+          title="Full set of all 14 polyhedral dice with randomized themes">All 14</button>
+        <button class="small-btn preset-chip" data-preset="dnd7" id="preset-rpg" title="Standard D&D 7-die set">RPG
+          7</button>
+        <button class="small-btn preset-chip" data-preset="exotic" id="preset-exotic"
+          title="Exotic polyhedra: d14, d16, d24, d30, d48, d60, d100, d120">Exotic 8</button>
+        <button class="small-btn preset-chip" data-preset="2d20" id="preset-adv"
+          title="2d20 Advantage roll">2d20</button>
+        <button class="small-btn preset-chip" data-preset="4d6" id="preset-2d6"
+          title="4d6 Ability Score roll">4d6</button>
+      </div>
+      <button class="small-btn" id="export-glb-btn"
+        style="width:100%; margin-top:4px; padding:3px; font-size:9.5px; background: rgba(35,42,54,0.75); border-color: rgba(97,175,239,0.3);"
+        title="Export selected 3D dice models to binary .glb format">📦 Export .GLB</button>
+    </div>
+
+    <div id="target-roll-section" style="margin-top: 6px;">
+      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Server / Target Roll</span>
+        <span style="font-size: 8.5px; color: #ff9838; font-weight: 700; letter-spacing: 0.5px;">PRESET</span>
+      </div>
+      <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+        <input type="text" id="target-roll-input" placeholder="e.g. d20: 20 or 2d6: 6, 6"
+          style="flex: 1; min-width: 0; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: #fff; font-size: 10px; padding: 3px 6px; font-family: inherit;" />
+        <button class="small-btn" id="target-roll-btn"
+          style="flex: none; padding: 3px 8px; background: rgba(255, 122, 24, 0.25); border-color: rgba(255, 122, 24, 0.5); color: #ffab5e; font-weight: 700;"
+          title="Roll predetermined dice with realistic physics simulation">🎯 Roll</button>
+      </div>
+      <div class="presets-row">
+        <button class="small-btn" id="target-nat20" title="Roll 1d20 forced to 20">Nat 20</button>
+        <button class="small-btn" id="target-critfail" title="Roll 1d20 forced to 1">Crit 1</button>
+        <button class="small-btn" id="target-lucky7" title="Roll 2d6 forced to 3, 4">Lucky 7</button>
+        <button class="small-btn" id="target-rpgmax" title="Roll RPG 7 set with max values">Max All</button>
+      </div>
+    </div>
+
+    <div id="roll-action-container">
+      <button class="roll-btn" id="roll-btn">
+        <div class="roll-charge-bar" id="roll-charge-bar"></div>
+        <div class="roll-btn-content">
+          <span id="roll-btn-text">🎲 ROLL DICE</span>
+          <span id="roll-hint-text" class="roll-subtext">Hold to throw harder (up to 2s)</span>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Result Banner -->
+  <div id="result-banner">
+    <div class="result-total">
+      <span class="result-total-label">Total</span>
+      <span id="result-total-val">0</span>
+    </div>
+    <div class="result-breakdown" id="result-breakdown-val">
+      Rolling dice...
+    </div>
+    <div class="result-actions">
+      <button class="icon-action-btn" id="lineup-btn"
+        title="Line up settled dice in front of camera with golden outlines">✨</button>
+      <button class="icon-action-btn" id="snapshot-btn" title="Capture & export result image">📸</button>
+      <button class="icon-action-btn" id="toggle-json-btn" title="Toggle Machine-Parsable JSON view">{ }</button>
+      <button class="icon-action-btn" id="copy-result-btn" title="Copy result string">📋</button>
+    </div>
+  </div>
+
+  <!-- Snapshot Modal -->
+  <div id="snapshot-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">🎲 Dice Roll Result Snapshot</div>
+        <button class="modal-close-btn" id="close-snapshot-btn">✕</button>
+      </div>
+      <img id="snapshot-img" class="snapshot-preview-img" alt="Dice Roll Result" />
+      <div class="modal-actions">
+        <button class="small-btn" id="modal-copy-btn" style="padding: 6px 14px; font-size: 11px;">📋 Copy Image</button>
+        <button class="small-btn" id="modal-download-btn"
+          style="padding: 6px 14px; font-size: 11px; background: var(--accent); color: #0b0d11; font-weight: 700;">💾
+          Download PNG</button>
+        <button class="small-btn" id="modal-tray-btn" style="padding: 6px 14px; font-size: 11px;">↩ Return to
+          Tray</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documentation & API Reference Modal -->
+  <div id="docs-modal">
+    <div class="docs-card">
+      <div class="docs-header">
+        <div class="docs-header-left">
+          <span style="font-size: 18px;">🎲</span>
+          <div class="docs-title">PolyDice Reference</div>
+          <span class="docs-badge">API & ARCHITECTURE</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="small-btn" id="copy-docs-markdown-btn"
+            style="padding: 4px 10px; font-size: 10px; background: rgba(97, 175, 239, 0.18); border-color: rgba(97, 175, 239, 0.4); color: var(--accent);">📋
+            Copy Markdown for LLM</button>
+          <button class="modal-close-btn" id="close-docs-btn">✕</button>
+        </div>
+      </div>
+
+      <div class="docs-tabs-nav">
+        <button class="docs-tab-btn active" data-tab="overview">📌 Overview & Features</button>
+        <button class="docs-tab-btn" data-tab="api">⚡ JavaScript API & Events</button>
+        <button class="docs-tab-btn" data-tab="llm">🤖 LLM Context / Raw Markdown</button>
+      </div>
+
+      <div class="docs-content-area">
+        <!-- Tab 1: Overview & Features -->
+        <div class="docs-section active" id="docs-sec-overview">
+          <h2><span>🎲</span> System Overview</h2>
+          <p><strong>PolyDice</strong> is a high-performance, 100% self-contained JavaScript 3D polyhedral dice
+            simulation library. It requires <strong>zero external image files or 3D asset downloads</strong>—all 9
+            polyhedral meshes, UV projections, and high-resolution normal maps with engraved numerals are synthesized
+            mathematically at runtime.</p>
+
+          <h3>Supported Polyhedral Dice</h3>
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th>Die</th>
+                <th>Geometry</th>
+                <th>Faces</th>
+                <th>Reading Rule</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>d4</code></td>
+                <td>Regular Tetrahedron</td>
+                <td>4 Equilateral Triangles</td>
+                <td>Opposite apex (bottom face flat)</td>
+              </tr>
+              <tr>
+                <td><code>d6</code></td>
+                <td>Regular Hexahedron (Cube)</td>
+                <td>6 Squares</td>
+                <td>Top face normal (+Y)</td>
+              </tr>
+              <tr>
+                <td><code>d8</code></td>
+                <td>Regular Octahedron</td>
+                <td>8 Equilateral Triangles</td>
+                <td>Top face normal (+Y)</td>
+              </tr>
+              <tr>
+                <td><code>d10</code></td>
+                <td>Pentagonal Trapezohedron</td>
+                <td>10 Kites</td>
+                <td>Top face normal (+Y)</td>
+              </tr>
+              <tr>
+                <td><code>d12</code></td>
+                <td>Regular Dodecahedron</td>
+                <td>12 Regular Pentagons</td>
+                <td>Top face normal (+Y)</td>
+              </tr>
+              <tr>
+                <td><code>d14</code></td>
+                <td>Heptagonal Trapezohedron</td>
+                <td>14 Kites</td>
+                <td>Top face normal (+Y)</td>
+              </tr>
+              <tr>
+                <td><code>d16</code></td>
+                <td>Octagonal Bipyramid</td>
+                <td>16 Isosceles Triangles</td>
+                <td>Top face normal (+Y)</td>
+              </tr>
+              <tr>
+                <td><code>d20</code></td>
+                <td>Regular Icosahedron</td>
+                <td>20 Equilateral Triangles</td>
+                <td>Top face normal (+Y)</td>
+              </tr>
+              <tr>
+                <td><code>d24</code></td>
+                <td>Deltoidal Icositetrahedron</td>
+                <td>24 Kites</td>
+                <td>Top face normal (+Y)</td>
+              </tr>
+              <tr>
+                <td><code>d30</code></td>
+                <td>Rhombic Triacontahedron</td>
+                <td>30 Golden Rhombi (ratio φ)</td>
+                <td>Top face normal (+Y)</td>
+              </tr>
+              <tr>
+                <td><code>d48</code></td>
+                <td>Disdyakis Dodecahedron</td>
+                <td>48 Scalene Triangles</td>
+                <td>Top face normal (+Y)</td>
+              </tr>
+              <tr>
+                <td><code>d60</code></td>
+                <td>Pentakis Dodecahedron</td>
+                <td>60 Isosceles Triangles</td>
+                <td>Top face normal (+Y)</td>
+              </tr>
+              <tr>
+                <td><code>d100</code></td>
+                <td>Zocchihedron (Dual Spherical Lattice)</td>
+                <td>100 Spherical Facets</td>
+                <td>Top face normal (+Y)</td>
+              </tr>
+              <tr>
+                <td><code>d120</code></td>
+                <td>Disdyakis Triacontahedron</td>
+                <td>120 Scalene Triangles</td>
+                <td>Top face normal (+Y)</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Key Architectural Pillars</h3>
+          <ul>
+            <li><strong>Procedural Engraving & Normal Mapping</strong>: A dynamic 2048² canvas renders centered numeral
+              glyphs and runs a Sobel edge-detection height-to-normal gradient shader to produce tactile, engraved
+              depth.</li>
+            <li><strong>Optional Procedural Beveling / Chamfers</strong>: Procedural geometric chamfer engine generating
+              edge quad strips and vertex corner cap polygons directly in 3D (Off: <code>0.0</code>, Subtle:
+              <code>0.05</code>, Round: <code>0.10</code>). Exported <code>.glb</code> models need no vertex-merging
+              when imported into Blender or game engines!
+            </li>
+            <li><strong>Ammo.js Rigid Body Dynamics</strong>: Continuous Collision Detection (CCD), restitution bounce,
+              rolling friction, and realistic relative polyhedral mass ratios.</li>
+            <li><strong>Synthesized Positional Audio</strong>: Momentum-attenuated Web Audio sound synthesizer with
+              distinct wood/felt low-end thuds and crisp micro-detuned die clacks.</li>
+            <li><strong>Headless Predetermined Roll Replay</strong>: Pre-simulates rolls in ~4ms headless Ammo.js steps,
+              applies local face transformation offset <code>qOffset</code>, and replays with 100% authentic tumbling
+              physics without mid-air steering.</li>
+            <li><strong>Multi-Row Showcase & GLTF Export</strong>: Lineup view with upright face camera alignment,
+              luminous silhouette outlines, and binary <code>.glb</code> 3D model export.</li>
+          </ul>
+        </div>
+
+        <!-- Tab 2: JavaScript API & Events -->
+        <div class="docs-section" id="docs-sec-api">
+          <h2><span>⚡</span> JavaScript Module & API Specification</h2>
+          <p>PolyDice is structured as a standalone, zero-asset ES6 module (<code>polydice.js</code>) taking
+            <code>THREE</code> and <code>Ammo</code> dependencies in its constructor, with backward-compatible aliases
+            on <code>window</code>.
+          </p>
+
+          <h3>1. ES6 Module Import & Constructor</h3>
+          <div class="docs-code-block">import { PolyDice } from './polydice.js';
+
+            // Host creates Three.js Scene, Camera, Renderer, and Animation Loop
+            const dice = new PolyDice({
+            THREE, // Three.js library instance
+            Ammo: window.Ammo, // Ammo.js WebAssembly loader or instance
+            ConvexHull, // Optional: Three.js ConvexHull addon
+            GLTFExporter, // Optional: Three.js GLTFExporter addon
+            scene, // Host Scene (dice.group mounts automatically)
+            tray: { width: 12.0, depth: 12.0, wallHeight: 2.4 },
+            audio: true // Web Audio collision synthesizer toggle
+            });
+
+            // Initialize Ammo physics world
+            await dice.init();
+
+            // In host render loop:
+            function animate() {
+            requestAnimationFrame(animate);
+            const deltaTime = Math.min(clock.getDelta(), 0.05);
+            dice.update(deltaTime); // Steps physics, syncs meshes, updates audio
+            renderer.render(scene, camera);
+            }</div>
+
+          <h3>2. Core Instance Methods</h3>
+          <div class="docs-code-block">// Roll active pool with Promise resolution:
+            const result = await dice.roll({ power: 1.2 });
+            console.log('Result:', result.total, result.summary);
+
+            // Roll guaranteed predetermined outcome:
+            await dice.rollPredeterminedDice(['d20'], [20], 1.0);
+
+            // Generate standalone die mesh (usable anywhere in your scene or pedestal):
+            const dieMesh = dice.createDieMesh('d20', { bevel: 0.20, material: 'ruby' });
+
+            // Listen to roll events:
+            dice.on('rollComplete', (result) => console.log('Settled:', result));
+
+            // Set bevel and material presets:
+            dice.setBevel(0.20, 4); // ratio, segments (immediately updates settled dice)
+            dice.setDiceMaterial('gold'); // updates all active dice immediately in real-time
+            dice.setDieMaterial(specificDie, 'obsidian'); // changes material of an individual die!
+            dice.selectDie(specificDie); // highlights die with cyan aura outline
+
+            // Clean teardown & memory management:
+            dice.dispose(); // frees GPU VRAM & Ammo WASM C++ heap memory</div>
+
+          <h3>3. Backward-Compatible Window Aliases & Events</h3>
+          <div class="docs-code-block">// Global convenience bindings (for webhooks & quick console tests):
+            window.rollDicePool(power = 1.0, targets = null);
+            window.rollPredeterminedDice(diceTypes, targetValues, power = 1.0);
+            window.parseTargetRollString('2d6: 6, 6');
+            window.diceEngine; // Access the active PolyDice instance
+
+            // Trigger roll via DOM Event (e.g. from server WebSocket):
+            window.dispatchEvent(new CustomEvent('serverDiceRoll', { detail: '2d6: 6, 6' }));
+
+            // Listen for finished roll:
+            window.addEventListener('diceRollComplete', (e) => console.log('Event Result:', e.detail));</div>
+
+          <h3>4. Output JSON Schema</h3>
+          <div class="docs-code-block">{
+            "timestamp": "2026-09-29T17:00:00.000Z",
+            "total": 12,
+            "diceCount": 2,
+            "dice": [
+            { "id": 1, "type": "d6", "result": 6 },
+            { "id": 2, "type": "d6", "result": 6 }
+            ],
+            "breakdown": {
+            "d6": [6, 6]
+            },
+            "summary": "2d6: [6, 6] (12)"
+            }</div>
+        </div>
+
+        <!-- Tab 3: LLM Context / Raw Markdown -->
+        <div class="docs-section" id="docs-sec-llm">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h2 style="margin: 0; border: none; padding: 0;"><span>🤖</span> LLM / Agent Context Specification</h2>
+            <div style="display: flex; gap: 6px;">
+              <button class="small-btn" id="copy-raw-markdown-btn"
+                style="padding: 4px 10px; font-size: 10px; background: var(--accent); color: #0a0d12; font-weight: 700;">📋
+                Copy Markdown for LLM</button>
+              <button class="small-btn" id="download-llmstxt-btn" style="padding: 4px 10px; font-size: 10px;">💾
+                Download llms.txt</button>
+            </div>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 0;">
+            This pre-formatted Markdown provides complete architectural, mathematical, and API context for ingestion
+            into Large Language Model prompts, autonomous agents, and documentation generators.
+          </p>
+          <pre id="llm-raw-content" class="docs-code-block"
+            style="max-height: 480px; white-space: pre-wrap; color: #abb2bf; font-size: 10.5px;"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theming & Library Configurator Modal -->
+    <div id="config-modal">
+      <div class="docs-card" style="max-width: 820px; height: 80vh;">
+        <div class="docs-header">
+          <div class="docs-header-left">
+            <span style="font-size: 18px;">⚙️</span>
+            <div class="docs-title">PolyDice Configurator & Integration Generator</div>
+            <span class="docs-badge" style="background: rgba(97, 175, 239, 0.2); color: var(--accent);">DEVELOPER
+              TOOL</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button class="small-btn" id="copy-active-config-btn"
+              style="padding: 4px 10px; font-size: 10px; background: rgba(97, 175, 239, 0.18); border-color: rgba(97, 175, 239, 0.4); color: var(--accent);">📋
+              Copy Integration Code</button>
+            <button class="modal-close-btn" id="close-config-btn">✕</button>
+          </div>
+        </div>
+
+        <div class="docs-tabs-nav">
+          <button class="docs-tab-btn active" data-cfg-tab="code">💻 ES6 Integration Code</button>
+          <button class="docs-tab-btn" data-cfg-tab="rollstring">🎯 Roll / Webhook String</button>
+          <button class="docs-tab-btn" data-cfg-tab="json">📦 JSON Config & Live Loader</button>
+        </div>
+
+        <div class="docs-content-area" style="padding: 16px 20px;">
+          <!-- Tab 1: Code Generator -->
+          <div class="cfg-section active" id="cfg-sec-code">
+            <p style="margin-top:0; font-size:12px; color: var(--text-muted);">
+              Drop this snippet into your application, web game, or VTT to initialize <strong>PolyDice</strong> with
+              your exact active pool, materials, and edge bevels:
+            </p>
+            <pre class="docs-code-block" id="cfg-code-display"
+              style="max-height: 380px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); color: #abb2bf; font-family: monospace; font-size: 11px;"></pre>
+          </div>
+
+          <!-- Tab 2: Roll String -->
+          <div class="cfg-section" id="cfg-sec-rollstring">
+            <p style="margin-top:0; font-size:12px; color: var(--text-muted);">
+              Target roll strings allow webhooks, Discord bots, or server game backends to command predetermined roll
+              outcomes:
+            </p>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <input type="text" id="cfg-rollstring-input"
+                style="flex:1; background: rgba(0,0,0,0.5); border: 1px solid var(--panel-border); border-radius: 4px; color: #fff; padding: 7px 10px; font-family: monospace; font-size: 12px;" />
+              <button class="small-btn" id="cfg-copy-rollstring-btn"
+                style="padding: 7px 14px; background: var(--accent); color: #0b0d11; font-weight:700;">Copy
+                String</button>
+              <button class="small-btn" id="cfg-test-rollstring-btn"
+                style="padding: 7px 14px; background: rgba(255, 122, 24, 0.25); border-color: rgba(255, 122, 24, 0.5); color: #ffab5e; font-weight:700;">Roll
+                Now 🎯</button>
+            </div>
+            <div style="font-size: 11px; color: #7f848e; line-height: 1.6;">
+              Formats: <code>"2d20: 20, 1"</code> &bull; <code>"d20: 18; 2d6: 6, 5"</code> &bull;
+              <code>"d100: 99"</code><br />
+              Engine method: <code>diceEngine.rollPredeterminedDice(diceTypes, targetValues, power)</code>
+            </div>
+          </div>
+
+          <!-- Tab 3: JSON Config & Importer -->
+          <div class="cfg-section" id="cfg-sec-json">
+            <p style="margin-top:0; font-size:12px; color: var(--text-muted);">
+              Inspect or edit your active configuration JSON below. Click <strong>Apply Config to Scene</strong> to
+              instantly re-theme and reconfigure the live simulation:
+            </p>
+            <textarea id="cfg-json-textarea"
+              style="width: 100%; height: 260px; background: rgba(0,0,0,0.5); border: 1px solid var(--panel-border); border-radius: 4px; color: #abb2bf; font-family: monospace; font-size: 11px; padding: 10px; resize: vertical; box-sizing: border-box;"></textarea>
+            <div style="display:flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
+              <button class="small-btn" id="cfg-copy-json-btn" style="padding: 6px 14px;">📋 Copy JSON</button>
+              <button class="small-btn" id="cfg-apply-json-btn"
+                style="padding: 6px 14px; background: var(--accent); color: #0b0d11; font-weight:700;">⚡ Apply Config to
+                Scene</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Machine-Parsable JSON Drawer -->
+    <div id="json-drawer">
+      <div class="section-title" style="margin: 0;">
+        <span>Machine-Parsable Roll Data (JSON)</span>
+        <button class="small-btn" id="copy-json-btn" style="flex:none; padding: 2px 8px;">Copy</button>
+      </div>
+      <div id="json-code">{}</div>
+    </div>
+
+    <!-- Texture Atlas Previews (Inspector Mode) -->
+    <div id="previews" style="display: none;">
+      <div class="preview-box">
+        <div class="section-title" style="margin:0; font-size:10px;">Diffuse (2048²)</div>
+        <canvas id="diffuse-canvas" class="preview-canvas" width="2048" height="2048"></canvas>
+      </div>
+      <div class="preview-box">
+        <div class="section-title" style="margin:0; font-size:10px;">Normal Map (2048²)</div>
+        <canvas id="normal-canvas" class="preview-canvas" width="2048" height="2048"></canvas>
+      </div>
+    </div>
+
+    <!-- Status pill -->
+    <div class="status-pill" id="status-pill">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Ready to roll</span>
+    </div>
+
+    <!-- Main Application Script -->
+    <script type="module">
+      import * as THREE from 'three';
+      import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+      import { ConvexHull } from 'three/addons/math/ConvexHull.js';
+      import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+      import { PolyDice, DICE_MATERIALS, PolyhedronPoints } from './polydice.js';
+
+      // =========================================================================
+      // 1. HOST THREE.JS SCENE SETUP & ENVIRONMENT
+      // =========================================================================
+
+      let pmremGen = null;
+      function createMoodyEnvironment(renderer) {
+        if (!pmremGen) {
+          pmremGen = new THREE.PMREMGenerator(renderer);
+          pmremGen.compileEquirectangularShader();
+        }
+
+        const c = document.createElement('canvas');
+        c.width = 1024;
+        c.height = 512;
+        const ctx = c.getContext('2d');
+
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, 512);
+        bgGrad.addColorStop(0, '#1c2434');
+        bgGrad.addColorStop(0.35, '#141a26');
+        bgGrad.addColorStop(0.7, '#0d121c');
+        bgGrad.addColorStop(1, '#080b12');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, 1024, 512);
+
+        // Warm Key Softbox Light
+        const warmGlow = ctx.createRadialGradient(512, 110, 5, 512, 110, 280);
+        warmGlow.addColorStop(0, 'rgba(255, 245, 230, 0.65)');
+        warmGlow.addColorStop(0.25, 'rgba(245, 210, 150, 0.45)');
+        warmGlow.addColorStop(0.65, 'rgba(190, 125, 45, 0.18)');
+        warmGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = warmGlow;
+        ctx.fillRect(0, 0, 1024, 512);
+
+        // Cool Rim Softbox Light
+        const coolRim = ctx.createRadialGradient(260, 180, 5, 260, 180, 280);
+        coolRim.addColorStop(0, 'rgba(210, 240, 255, 0.55)');
+        coolRim.addColorStop(0.35, 'rgba(130, 190, 255, 0.30)');
+        coolRim.addColorStop(0.75, 'rgba(30, 80, 170, 0.10)');
+        coolRim.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = coolRim;
+        ctx.fillRect(0, 0, 1024, 512);
+
+        // Overhead Studio Strip Light for Crystal Speculars
+        const stripGrad = ctx.createLinearGradient(0, 50, 0, 150);
+        stripGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+        stripGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.40)');
+        stripGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = stripGrad;
+        ctx.fillRect(100, 50, 824, 100);
+
+        const envTexture = new THREE.CanvasTexture(c);
+        envTexture.mapping = THREE.EquirectangularReflectionMapping;
+
+        const envMap = pmremGen.fromEquirectangular(envTexture).texture;
+        envTexture.dispose();
+        return envMap;
+      }
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color('#131722');
+
+      const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(0, 14, 13);
+      camera.lookAt(0, 0, 0);
+
+      const audioListener = new THREE.AudioListener();
+      camera.add(audioListener);
+
+      const canvas = document.getElementById('dice-renderer-canvas');
+      const renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        powerPreference: 'high-performance',
+        preserveDrawingBuffer: true
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight, false);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.0;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      const moodyEnvMap = createMoodyEnvironment(renderer);
+      scene.environment = moodyEnvMap;
+
+      const controls = new OrbitControls(camera, canvas);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 2.05;
+      controls.minDistance = 2.0;
+      controls.maxDistance = 35.0;
+      controls.target.set(0, 0, 0);
+      controls.update();
+
+      controls.addEventListener('start', () => {
+        isCameraTransitioning = false;
+      });
+
+      // 1. Key Directional Light (Overhead-Front-Right)
+      const keyLight = new THREE.DirectionalLight(0xfffaee, 2.2);
+      keyLight.position.set(6, 18, 8);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.width = 2048;
+      keyLight.shadow.mapSize.height = 2048;
+      keyLight.shadow.camera.near = 2;
+      keyLight.shadow.camera.far = 40;
+      keyLight.shadow.camera.left = -10;
+      keyLight.shadow.camera.right = 10;
+      keyLight.shadow.camera.top = 10;
+      keyLight.shadow.camera.bottom = -10;
+      keyLight.shadow.bias = -0.0002;
+      keyLight.shadow.normalBias = 0.035;
+      scene.add(keyLight);
+      scene.add(keyLight.target);
+      keyLight.target.position.set(0, 0, 0);
+
+      // 2. Fill Directional Light (Front-Left, Cool Slate/Cyan Tint)
+      const fillLight = new THREE.DirectionalLight(0x8ec5fc, 1.0);
+      fillLight.position.set(-8, 12, -6);
+      scene.add(fillLight);
+
+      // 3. Rim / Kicker Light (Back, Warm Champagne Tint for facet pop)
+      const kickerLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+      kickerLight.position.set(0, 8, -12);
+      scene.add(kickerLight);
+
+      // 4. Soft Top Ambient Light
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+      scene.add(ambientLight);
+
+      // 5. Hemisphere Sky/Ground Light
+      const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x1a2e22, 0.60);
+      scene.add(hemiLight);
+
+      // 3D Inspector Studio Environment Rig
+      const inspectorStudioGroup = new THREE.Group();
+      inspectorStudioGroup.visible = false;
+      scene.add(inspectorStudioGroup);
+
+      const pedestalBaseGeo = new THREE.CylinderGeometry(2.4, 2.7, 0.28, 48);
+      const pedestalBaseMat = new THREE.MeshStandardMaterial({
+        color: 0x242e3f,
+        roughness: 0.35,
+        metalness: 0.22,
+        dithering: true
+      });
+      const pedestalBaseMesh = new THREE.Mesh(pedestalBaseGeo, pedestalBaseMat);
+      pedestalBaseMesh.position.set(0, 0.95, 0);
+      pedestalBaseMesh.receiveShadow = true;
+      inspectorStudioGroup.add(pedestalBaseMesh);
+
+      const pedestalRingGeo = new THREE.TorusGeometry(2.42, 0.04, 16, 48);
+      const pedestalRingMat = new THREE.MeshStandardMaterial({
+        color: 0xf5d061,
+        roughness: 0.15,
+        metalness: 0.9,
+        dithering: true
+      });
+      const pedestalRingMesh = new THREE.Mesh(pedestalRingGeo, pedestalRingMat);
+      pedestalRingMesh.rotation.x = Math.PI / 2;
+      pedestalRingMesh.position.set(0, 1.09, 0);
+      inspectorStudioGroup.add(pedestalRingMesh);
+
+      const gridCanvas = document.createElement('canvas');
+      gridCanvas.width = 512;
+      gridCanvas.height = 512;
+      const gCtx = gridCanvas.getContext('2d');
+      gCtx.fillStyle = '#0b1019';
+      gCtx.fillRect(0, 0, 512, 512);
+      gCtx.lineWidth = 1.5;
+      for (let r = 30; r < 240; r += 28) {
+        gCtx.strokeStyle = 'rgba(97, 175, 239, 0.22)';
+        gCtx.beginPath();
+        gCtx.arc(256, 256, r, 0, Math.PI * 2);
+        gCtx.stroke();
+      }
+      gCtx.strokeStyle = 'rgba(97, 175, 239, 0.4)';
+      gCtx.beginPath();
+      gCtx.moveTo(256, 16); gCtx.lineTo(256, 496);
+      gCtx.moveTo(16, 256); gCtx.lineTo(496, 256);
+      gCtx.stroke();
+      gCtx.strokeStyle = 'rgba(229, 192, 123, 0.25)';
+      for (let x = 64; x < 512; x += 64) {
+        gCtx.beginPath();
+        gCtx.moveTo(x, 16); gCtx.lineTo(x, 496);
+        gCtx.stroke();
+        gCtx.beginPath();
+        gCtx.moveTo(16, x); gCtx.lineTo(496, x);
+        gCtx.stroke();
+      }
+      const gridTexture = new THREE.CanvasTexture(gridCanvas);
+      const gridDiscGeo = new THREE.CircleGeometry(2.38, 48);
+      const gridDiscMat = new THREE.MeshStandardMaterial({
+        map: gridTexture,
+        roughness: 0.45,
+        metalness: 0.1,
+        dithering: true
+      });
+      const gridDiscMesh = new THREE.Mesh(gridDiscGeo, gridDiscMat);
+      gridDiscMesh.rotation.x = -Math.PI / 2;
+      gridDiscMesh.position.set(0, 1.092, 0);
+      gridDiscMesh.receiveShadow = true;
+      inspectorStudioGroup.add(gridDiscMesh);
+
+      const backCanvas = document.createElement('canvas');
+      backCanvas.width = 512;
+      backCanvas.height = 512;
+      const bCtx = backCanvas.getContext('2d');
+      const bGrad = bCtx.createRadialGradient(256, 256, 20, 256, 256, 320);
+      bGrad.addColorStop(0, '#2d4263');
+      bGrad.addColorStop(0.35, '#182436');
+      bGrad.addColorStop(0.75, '#0b1018');
+      bGrad.addColorStop(1, '#05070a');
+      bCtx.fillStyle = bGrad;
+      bCtx.fillRect(0, 0, 512, 512);
+      bCtx.strokeStyle = 'rgba(97, 175, 239, 0.12)';
+      bCtx.lineWidth = 1;
+      for (let i = 32; i < 512; i += 32) {
+        bCtx.beginPath();
+        bCtx.moveTo(i, 0); bCtx.lineTo(i, 512);
+        bCtx.stroke();
+        bCtx.beginPath();
+        bCtx.moveTo(0, i); bCtx.lineTo(512, i);
+        bCtx.stroke();
+      }
+      const backTex = new THREE.CanvasTexture(backCanvas);
+      const backdropGeo = new THREE.PlaneGeometry(16, 10);
+      const backdropMat = new THREE.MeshBasicMaterial({ map: backTex });
+      const backdropMesh = new THREE.Mesh(backdropGeo, backdropMat);
+      backdropMesh.position.set(0, 2.5, -3.2);
+      inspectorStudioGroup.add(backdropMesh);
+
+      const inspectorKickerLight = new THREE.DirectionalLight(0xfff0dd, 1.0);
+      inspectorKickerLight.position.set(0, 4.0, -3.0);
+      inspectorStudioGroup.add(inspectorKickerLight);
+      inspectorStudioGroup.add(inspectorKickerLight.target);
+      inspectorKickerLight.target.position.set(0, 2.5, 0);
+
+      const inspectorFrontKey = new THREE.DirectionalLight(0xffffff, 1.0);
+      inspectorFrontKey.position.set(3.5, 6.0, 4.5);
+      inspectorStudioGroup.add(inspectorFrontKey);
+      inspectorStudioGroup.add(inspectorFrontKey.target);
+      inspectorFrontKey.target.position.set(0, 2.5, 0);
+
+      // =========================================================================
+      // 2. INSTANTIATE POLYDICE ENGINE MODULE
+      // =========================================================================
+
+      const diceEngine = new PolyDice({
+        THREE,
+        Ammo: window.Ammo,
+        ConvexHull,
+        GLTFExporter,
+        scene,
+        audio: true,
+        audioListener,
+        defaultMaterial: 'ruby',
+        defaultBevel: 0.20,
+        defaultBevelSegments: 4
+      });
+
+      diceEngine.renderer = renderer;
+      diceEngine.domElement = renderer.domElement;
+      diceEngine.camera = camera;
+      diceEngine.controls = controls;
+
+      let visualTray = null;
+
+      // View state
+      let currentMode = 'tray';
+      let currentInspectorDie = 'd30';
+      let currentBevel = 0.20;
+      let currentBevelSegments = 4;
+      let currentMaterial = 'ruby';
+      let inspectorDieMesh = null;
+      let isCameraTransitioning = false;
+
+      const trayCamPos = new THREE.Vector3(0, 14, 13);
+      const trayTargetPos = new THREE.Vector3(0, 0, 0);
+      const inspectorCamPos = new THREE.Vector3(0, 4.2, 5.8);
+      const inspectorTargetPos = new THREE.Vector3(0, 2.5, 0);
+
+      // =========================================================================
+      // 3. UI SYNC & INSPECTOR CONTROLS
+      // =========================================================================
+
+      function setInspectorPolyhedron(type) {
+        currentInspectorDie = type;
+        if (inspectorDieMesh) {
+          scene.remove(inspectorDieMesh);
+          inspectorDieMesh.geometry.dispose();
+          if (inspectorDieMesh.material.map) inspectorDieMesh.material.map.dispose();
+          if (inspectorDieMesh.material.normalMap) inspectorDieMesh.material.normalMap.dispose();
+          inspectorDieMesh.material.dispose();
+          inspectorDieMesh = null;
+        }
+
+        inspectorDieMesh = diceEngine.createDieMesh(type, {
+          bevel: currentBevel,
+          bevelSegments: currentBevelSegments,
+          material: currentMaterial
+        });
+
+        // Fit to pedestal scale
+        inspectorDieMesh.geometry.computeBoundingSphere();
+        const targetScale = 2.0 / (inspectorDieMesh.geometry.boundingSphere.radius || 1.0);
+        inspectorDieMesh.geometry.scale(targetScale, targetScale, targetScale);
+        inspectorDieMesh.position.set(0, 2.5, 0);
+        scene.add(inspectorDieMesh);
+
+        // Update 2D texture preview canvases
+        const previews = diceEngine.getDebugCanvases(type, {
+          bevel: currentBevel,
+          bevelSegments: currentBevelSegments,
+          material: currentMaterial
+        });
+
+        if (previews) {
+          const dCan = document.getElementById('diffuse-canvas');
+          const nCan = document.getElementById('normal-canvas');
+          if (dCan && previews.diffuseCanvas) {
+            const ctx = dCan.getContext('2d');
+            ctx.clearRect(0, 0, dCan.width, dCan.height);
+            ctx.drawImage(previews.diffuseCanvas, 0, 0, dCan.width, dCan.height);
+          }
+          if (nCan && previews.normalCanvas) {
+            const ctx = nCan.getContext('2d');
+            ctx.clearRect(0, 0, nCan.width, nCan.height);
+            ctx.drawImage(previews.normalCanvas, 0, 0, nCan.width, nCan.height);
+          }
+        }
+      }
+
+      function switchMode(newMode) {
+        currentMode = newMode;
+
+        if (newMode === 'tray') {
+          document.getElementById('tab-tray').classList.add('active');
+          document.getElementById('tab-inspector').classList.remove('active');
+          document.getElementById('pool-section').style.display = 'block';
+          document.getElementById('presets-section').style.display = 'block';
+          document.getElementById('roll-action-container').style.display = 'block';
+          document.getElementById('previews').style.display = 'none';
+          document.getElementById('die-selector-title').textContent = 'Add Die to Pool';
+
+          if (visualTray) visualTray.visible = true;
+          inspectorStudioGroup.visible = false;
+          if (inspectorDieMesh) inspectorDieMesh.visible = false;
+
+          document.querySelectorAll('#dice-selector .die-btn').forEach(b => b.classList.remove('active'));
+
+          isCameraTransitioning = true;
+        } else {
+          document.getElementById('tab-inspector').classList.add('active');
+          document.getElementById('tab-tray').classList.remove('active');
+          document.getElementById('pool-section').style.display = 'none';
+          document.getElementById('presets-section').style.display = 'none';
+          document.getElementById('roll-action-container').style.display = 'none';
+          document.getElementById('previews').style.display = 'flex';
+          document.getElementById('die-selector-title').textContent = 'Select Polyhedron';
+
+          if (visualTray) visualTray.visible = false;
+          inspectorStudioGroup.visible = true;
+          if (inspectorDieMesh) inspectorDieMesh.visible = true;
+
+          document.querySelectorAll('#dice-selector .die-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.type === currentInspectorDie);
+          });
+
+          isCameraTransitioning = true;
+          setInspectorPolyhedron(currentInspectorDie);
+        }
+      }
+
+      function updateMaterialUI() {
+        const selectedDie = diceEngine.getSelectedDie();
+        const activeMatKey = selectedDie ? (selectedDie.materialKey || currentMaterial) : currentMaterial;
+
+        document.querySelectorAll('#material-selector .mat-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.mat === activeMatKey);
+        });
+
+        const labelEl = document.getElementById('material-label');
+        if (labelEl && DICE_MATERIALS[activeMatKey]) {
+          if (selectedDie) {
+            labelEl.innerHTML = `<span style="color:var(--accent); font-weight:700;">Die #${selectedDie.id} (${selectedDie.type}):</span> ${DICE_MATERIALS[activeMatKey].name} <a href="#" id="deselect-die-link" style="color:var(--text-muted); font-size:8px; margin-left:4px; text-decoration:underline;">(all)</a>`;
+            const deselectLink = document.getElementById('deselect-die-link');
+            if (deselectLink) {
+              deselectLink.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                diceEngine.deselectDie();
+              };
+            }
+          } else {
+            labelEl.textContent = `${DICE_MATERIALS[activeMatKey].name} (All Dice)`;
+          }
+        }
+      }
+
+      function updatePoolChipsUI() {
+        const container = document.getElementById('dice-pool-chips');
+        container.innerHTML = '';
+        const pool = diceEngine.getDicePool();
+        const activeDice = diceEngine.getActiveDice();
+        const selectedDie = diceEngine.getSelectedDie();
+
+        if (pool.length === 0) {
+          container.innerHTML = '<span style="font-size: 10px; color: var(--text-muted);">Click dice to add</span>';
+          return;
+        }
+
+        pool.forEach((type, idx) => {
+          const chip = document.createElement('div');
+          const correspondingDie = activeDice[idx];
+          const isSelected = selectedDie && correspondingDie && (selectedDie === correspondingDie);
+          const dieMatKey = (correspondingDie && correspondingDie.materialKey) || (diceEngine.poolMaterials && diceEngine.poolMaterials[idx]) || currentMaterial;
+          const matDef = DICE_MATERIALS[dieMatKey] || {};
+          const swatchColor = matDef.baseColor || '#ff3366';
+
+          chip.className = 'pool-chip' + (isSelected ? ' selected' : '');
+          chip.style.cursor = 'pointer';
+          chip.title = `Click to select Die #${idx + 1} (${type})`;
+          if (isSelected) {
+            chip.style.borderColor = 'var(--accent)';
+            chip.style.background = 'rgba(97, 175, 239, 0.22)';
+            chip.style.boxShadow = '0 0 6px rgba(97, 175, 239, 0.35)';
+          }
+
+          chip.innerHTML = `
+          <span style="display:inline-block; width:6.5px; height:6.5px; border-radius:50%; background:${swatchColor}; margin-right:3px; vertical-align:middle; border:1px solid rgba(255,255,255,0.4);"></span>
+          <span>${type}</span>
+          <span class="chip-remove" title="Remove die">&times;</span>
+        `;
+
+          chip.onclick = (e) => {
+            if (e.target.classList.contains('chip-remove')) return;
+            if (correspondingDie) {
+              if (diceEngine.getSelectedDie() === correspondingDie) {
+                diceEngine.deselectDie();
+              } else {
+                diceEngine.selectDie(correspondingDie);
+              }
+            }
+          };
+
+          chip.querySelector('.chip-remove').onclick = (e) => {
+            e.stopPropagation();
+            diceEngine.removeDieFromPool(idx);
+            updatePoolChipsUI();
+          };
+          container.appendChild(chip);
+        });
+      }
+
+      function addDieToPoolUI(type) {
+        if (diceEngine.getDicePool().length >= 24) return;
+        diceEngine.addDieToPool(type);
+        updatePoolChipsUI();
+      }
+
+      function setBevelUI(bevel, segments = null) {
+        currentBevel = bevel;
+        if (segments != null) currentBevelSegments = segments;
+        diceEngine.setBevel(bevel, currentBevelSegments);
+
+        document.querySelectorAll('#bevel-switch .tab-btn').forEach(btn => {
+          const val = parseFloat(btn.dataset.bevel);
+          btn.classList.toggle('active', Math.abs(val - currentBevel) < 0.01);
+        });
+
+        const segRow = document.getElementById('bevel-segments-row');
+        const segLabel = document.getElementById('bevel-seg-label');
+        if (currentBevel === 0.0) {
+          if (segRow) segRow.style.opacity = '0.35';
+          if (segLabel) segLabel.textContent = 'Sharp (0 seg)';
+        } else {
+          if (segRow) segRow.style.opacity = '1.0';
+          if (segLabel) segLabel.textContent = `${currentBevelSegments} seg`;
+        }
+
+        if (currentMode === 'inspector') {
+          setInspectorPolyhedron(currentInspectorDie);
+        }
+      }
+
+      function setBevelSegmentsUI(segments) {
+        currentBevelSegments = segments;
+        diceEngine.setBevelSegments(segments);
+
+        document.querySelectorAll('#bevel-segments-switch .tab-btn').forEach(btn => {
+          const val = parseInt(btn.dataset.seg, 10);
+          btn.classList.toggle('active', val === currentBevelSegments);
+        });
+
+        const segLabel = document.getElementById('bevel-seg-label');
+        if (segLabel && currentBevel > 0.0) {
+          segLabel.textContent = `${currentBevelSegments} seg`;
+        }
+
+        if (currentMode === 'inspector') {
+          setInspectorPolyhedron(currentInspectorDie);
+        }
+      }
+
+      function setDiceMaterialUI(matKey) {
+        const selectedDie = diceEngine.getSelectedDie();
+        if (selectedDie) {
+          diceEngine.setDieMaterial(selectedDie, matKey);
+        } else {
+          currentMaterial = matKey;
+          diceEngine.setDiceMaterial(matKey);
+        }
+
+        updateMaterialUI();
+        updatePoolChipsUI();
+
+        if (currentMode === 'inspector') {
+          setInspectorPolyhedron(currentInspectorDie);
+        }
+      }
+
+      function applyPresetPool(presetKey) {
+        let pool = [];
+        let materials = null;
+        const allMats = ['ruby', 'emerald', 'sapphire', 'pearl', 'gold', 'silver', 'obsidian'];
+
+        switch (presetKey) {
+          case 'all14':
+            pool = ['d4', 'd6', 'd8', 'd10', 'd12', 'd14', 'd16', 'd20', 'd24', 'd30', 'd48', 'd60', 'd100', 'd120'];
+            materials = pool.map(() => allMats[Math.floor(Math.random() * allMats.length)]);
+            break;
+          case 'dnd7':
+            pool = ['d4', 'd6', 'd8', 'd10', 'd10', 'd12', 'd20'];
+            break;
+          case '2d20':
+            pool = ['d20', 'd20'];
+            break;
+          case '4d6':
+            pool = ['d6', 'd6', 'd6', 'd6'];
+            break;
+          case 'exotic':
+            pool = ['d14', 'd16', 'd24', 'd30', 'd48', 'd60', 'd100', 'd120'];
+            break;
+        }
+        diceEngine.setDicePool(pool, materials);
+        updatePoolChipsUI();
+        document.querySelectorAll('#presets-section .preset-chip').forEach(c => {
+          c.classList.toggle('active', c.dataset.preset === presetKey);
+        });
+        setTimeout(() => {
+          document.querySelectorAll('#presets-section .preset-chip').forEach(c => c.classList.remove('active'));
+        }, 1000);
+      }
+
+      // =========================================================================
+      // 4. ROLLING & EVENT WIRING
+      // =========================================================================
+
+      // Wire Engine Events to Host UI
+      diceEngine.on('rollStart', ({ power }) => {
+        document.getElementById('roll-btn').disabled = true;
+        document.getElementById('status-dot').className = 'status-dot rolling';
+        document.getElementById('status-text').textContent = power > 1.4 ? `Rolling (Power: ${power.toFixed(1)}x)...` : 'Rolling dice...';
+        document.getElementById('result-banner').classList.remove('visible');
+      });
+
+      diceEngine.on('rollComplete', (result) => {
+        document.getElementById('roll-btn').disabled = false;
+        document.getElementById('status-dot').className = 'status-dot';
+        document.getElementById('status-text').textContent = 'Settled';
+
+        const chargeBar = document.getElementById('roll-charge-bar');
+        const btnText = document.getElementById('roll-btn-text');
+        const hintText = document.getElementById('roll-hint-text');
+        if (chargeBar) {
+          chargeBar.style.width = '0%';
+          chargeBar.style.background = 'linear-gradient(90deg, rgba(97, 175, 239, 0.45) 0%, rgba(229, 192, 123, 0.85) 100%)';
+        }
+        if (btnText) btnText.innerHTML = '🎲 ROLL DICE';
+        if (hintText) hintText.textContent = 'Hold to throw harder (up to 2s)';
+
+        document.getElementById('result-total-val').textContent = result.total;
+        document.getElementById('result-breakdown-val').textContent = result.summary;
+        document.getElementById('json-code').textContent = JSON.stringify(result, null, 2);
+        document.getElementById('result-banner').classList.add('visible');
+      });
+
+      // Roll with charge throw
+      let chargeStartTime = 0;
+      let isCharging = false;
+      let chargeAnimId = null;
+
+      function startCharge(e) {
+        if (diceEngine.isRolling()) return;
+        isCharging = true;
+        chargeStartTime = performance.now();
+        updateChargeVisual();
+      }
+
+      function updateChargeVisual() {
+        if (!isCharging) return;
+        const elapsed = Math.min((performance.now() - chargeStartTime) / 1000, 2.0);
+        const ratio = elapsed / 2.0;
+        const power = 1.0 + ratio * 1.2;
+
+        const chargeBar = document.getElementById('roll-charge-bar');
+        const btnText = document.getElementById('roll-btn-text');
+        const hintText = document.getElementById('roll-hint-text');
+
+        if (chargeBar) chargeBar.style.width = `${(ratio * 100).toFixed(0)}%`;
+        if (btnText) btnText.innerHTML = `🎲 THROW (${power.toFixed(1)}x)`;
+        if (hintText) hintText.textContent = ratio > 0.85 ? 'MAX THROW POWER!' : `Charging... ${(ratio * 100).toFixed(0)}%`;
+
+        chargeAnimId = requestAnimationFrame(updateChargeVisual);
+      }
+
+      function releaseCharge(e) {
+        if (!isCharging) return;
+        isCharging = false;
+        if (chargeAnimId) cancelAnimationFrame(chargeAnimId);
+
+        const elapsed = Math.min((performance.now() - chargeStartTime) / 1000, 2.0);
+        const ratio = elapsed / 2.0;
+        const power = 1.0 + ratio * 1.2;
+
+        diceEngine.roll({ power });
+      }
+
+      // Capture & Open Snapshot Modal
+      function captureAndOpenSnapshot() {
+        if (diceEngine.getActiveDice().length === 0) {
+          alert('Please roll dice first to capture a snapshot!');
+          return;
+        }
+
+        const canvas = diceEngine.generateSnapshot(renderer, camera);
+        if (!canvas) return;
+
+        const dataUrl = canvas.toDataURL('image/png');
+        const imgEl = document.getElementById('snapshot-img');
+        imgEl.src = dataUrl;
+
+        const modal = document.getElementById('snapshot-modal');
+        modal.classList.add('open');
+
+        const copyBtn = document.getElementById('modal-copy-btn');
+        copyBtn.onclick = () => {
+          canvas.toBlob(blob => {
+            if (!blob) return;
+            try {
+              navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+              ]).then(() => {
+                copyBtn.textContent = '✓ Copied to Clipboard!';
+                setTimeout(() => copyBtn.textContent = '📋 Copy Image', 1800);
+              }).catch(err => {
+                console.error(err);
+                copyBtn.textContent = 'Copy failed';
+              });
+            } catch (err) {
+              console.error(err);
+            }
+          }, 'image/png');
+        };
+
+        const downloadBtn = document.getElementById('modal-download-btn');
+        downloadBtn.onclick = () => {
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          const total = diceEngine.getLastRollResult() ? diceEngine.getLastRollResult().total : 'result';
+          a.download = `polydice-roll-${total}.png`;
+          a.click();
+        };
+      }
+
+      // Export Active Dice to GLB
+      async function exportDiceToGLB() {
+        try {
+          const blob = await diceEngine.exportGLTF({
+            mesh: currentMode === 'inspector' ? inspectorDieMesh : null,
+            types: currentMode === 'inspector' ? null : diceEngine.getDicePool()
+          });
+          const filename = currentMode === 'inspector'
+            ? `polydice-${currentInspectorDie}.glb`
+            : `polydice-pool-${diceEngine.getDicePool().join('-') || 'dice'}.glb`;
+
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = filename;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(link.href), 1500);
+        } catch (err) {
+          console.error('GLTF Export failed:', err);
+          alert('Export to GLB failed: ' + err.message);
+        }
+      }
+
+      // =========================================================================
+      // 5. DOM EVENT ATTACHMENTS
+      // =========================================================================
+
+      // 3D Die Click Selection via Raycasting
+      let canvasPointerDown = { x: 0, y: 0 };
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        canvasPointerDown.x = e.clientX;
+        canvasPointerDown.y = e.clientY;
+      });
+
+      renderer.domElement.addEventListener('pointerup', (e) => {
+        const dx = e.clientX - canvasPointerDown.x;
+        const dy = e.clientY - canvasPointerDown.y;
+        if (Math.hypot(dx, dy) < 7 && currentMode === 'tray' && !diceEngine.isRolling()) {
+          const rect = renderer.domElement.getBoundingClientRect();
+          const mouse = new THREE.Vector2(
+            ((e.clientX - rect.left) / rect.width) * 2 - 1,
+            -((e.clientY - rect.top) / rect.height) * 2 + 1
+          );
+          const raycaster = new THREE.Raycaster();
+          raycaster.setFromCamera(mouse, camera);
+
+          const activeMeshes = diceEngine.getActiveDice().map(d => d.mesh);
+          const hits = raycaster.intersectObjects(activeMeshes, false);
+
+          if (hits.length > 0) {
+            const hitMesh = hits[0].object;
+            const clickedDie = diceEngine.getActiveDice().find(d => d.mesh === hitMesh);
+            if (clickedDie) {
+              if (diceEngine.getSelectedDie() === clickedDie) {
+                diceEngine.deselectDie();
+              } else {
+                diceEngine.selectDie(clickedDie);
+              }
+            }
+          } else {
+            diceEngine.deselectDie();
+          }
+        }
+      });
+
+      // Listen to Engine Selection and Material events
+      diceEngine.on('selectionChange', () => {
+        updateMaterialUI();
+        updatePoolChipsUI();
+      });
+      diceEngine.on('dieMaterialChange', () => {
+        updateMaterialUI();
+        updatePoolChipsUI();
+      });
+      diceEngine.on('materialChange', () => {
+        updateMaterialUI();
+        updatePoolChipsUI();
+      });
+
+      const rollBtn = document.getElementById('roll-btn');
+      rollBtn.addEventListener('pointerdown', startCharge);
+      window.addEventListener('pointerup', releaseCharge);
+      window.addEventListener('pointercancel', releaseCharge);
+
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !isCharging && !diceEngine.isRolling() && currentMode === 'tray') {
+          const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+          if (tag !== 'input' && tag !== 'textarea') {
+            e.preventDefault();
+            startCharge();
+          }
+        }
+      });
+      window.addEventListener('keyup', (e) => {
+        if (e.code === 'Space' && isCharging) {
+          releaseCharge();
+        }
+      });
+
+      document.getElementById('tab-tray').addEventListener('click', () => switchMode('tray'));
+      document.getElementById('tab-inspector').addEventListener('click', () => switchMode('inspector'));
+
+      document.getElementById('clear-pool-btn').addEventListener('click', () => {
+        diceEngine.setDicePool([]);
+        updatePoolChipsUI();
+      });
+
+      document.querySelectorAll('#dice-selector .die-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const type = btn.dataset.type;
+          if (currentMode === 'tray') {
+            addDieToPoolUI(type);
+          } else {
+            document.querySelectorAll('#dice-selector .die-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            setInspectorPolyhedron(type);
+          }
+        });
+      });
+
+      document.querySelectorAll('.preset-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          applyPresetPool(chip.dataset.preset);
+        });
+      });
+
+      // Theming & Material Shuffle Button
+      const randomizeMatsBtn = document.getElementById('randomize-mats-btn');
+      if (randomizeMatsBtn) {
+        randomizeMatsBtn.addEventListener('click', () => {
+          diceEngine.randomizePoolMaterials();
+          updatePoolChipsUI();
+          if (currentMode === 'tray') {
+            diceEngine.activeDiceInstances.forEach((d, idx) => {
+              const matKey = (diceEngine.poolMaterials && diceEngine.poolMaterials[idx]) || currentMaterial;
+              diceEngine.setDieMaterial(d, matKey);
+            });
+          }
+        });
+      }
+
+      document.querySelectorAll('#bevel-switch .tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setBevelUI(parseFloat(btn.dataset.bevel));
+        });
+      });
+
+      document.querySelectorAll('#bevel-segments-switch .tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setBevelSegmentsUI(parseInt(btn.dataset.seg, 10));
+        });
+      });
+
+      document.querySelectorAll('#material-selector .mat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setDiceMaterialUI(btn.dataset.mat);
+        });
+      });
+
+      const lineupBtn = document.getElementById('lineup-btn');
+      if (lineupBtn) {
+        lineupBtn.addEventListener('click', () => {
+          const isShowcase = diceEngine.toggleShowcaseMode(camera);
+          lineupBtn.innerHTML = isShowcase ? '↩️' : '✨';
+          lineupBtn.classList.toggle('active', isShowcase);
+          lineupBtn.title = isShowcase ? 'Return dice to resting positions in tray' : 'Line up settled dice in front of camera with golden outlines';
+          isCameraTransitioning = true;
+        });
+      }
+
+      const snapshotBtn = document.getElementById('snapshot-btn');
+      if (snapshotBtn) snapshotBtn.addEventListener('click', captureAndOpenSnapshot);
+
+      const exportGlbBtn = document.getElementById('export-glb-btn');
+      if (exportGlbBtn) exportGlbBtn.addEventListener('click', exportDiceToGLB);
+
+      const soundBtn = document.getElementById('sound-btn');
+      if (soundBtn) {
+        soundBtn.addEventListener('click', () => {
+          const newState = !diceEngine.isSoundEnabled();
+          diceEngine.setSoundEnabled(newState);
+          soundBtn.innerHTML = newState ? '<span>🔊</span> Audio' : '<span>🔇</span> Mute';
+          soundBtn.classList.toggle('active', !newState);
+        });
+      }
+
+      const panelToggleBtn = document.getElementById('panel-toggle-btn');
+      const uiPanel = document.getElementById('ui-panel');
+      if (panelToggleBtn && uiPanel) {
+        panelToggleBtn.addEventListener('click', () => {
+          uiPanel.classList.toggle('collapsed');
+          panelToggleBtn.textContent = uiPanel.classList.contains('collapsed') ? '▶' : '◀';
+        });
+      }
+
+      const snapshotModal = document.getElementById('snapshot-modal');
+      const closeSnapshot = () => {
+        if (snapshotModal) snapshotModal.classList.remove('open');
+      };
+
+      const closeBtn1 = document.getElementById('close-snapshot-btn');
+      const closeBtn2 = document.getElementById('modal-close-btn');
+      if (closeBtn1) closeBtn1.addEventListener('click', closeSnapshot);
+      if (closeBtn2) closeBtn2.addEventListener('click', closeSnapshot);
+
+      const modalTrayBtn = document.getElementById('modal-tray-btn');
+      if (modalTrayBtn) {
+        modalTrayBtn.addEventListener('click', () => {
+          closeSnapshot();
+          if (diceEngine.isShowcase) {
+            diceEngine.exitShowcaseMode();
+            if (lineupBtn) {
+              lineupBtn.innerHTML = '✨';
+              lineupBtn.classList.remove('active');
+              lineupBtn.title = 'Line up settled dice in front of camera with golden outlines';
+            }
+            isCameraTransitioning = true;
+          }
+        });
+      }
+
+      if (snapshotModal) {
+        snapshotModal.addEventListener('click', (e) => {
+          if (e.target === snapshotModal) closeSnapshot();
+        });
+      }
+
+      // Configurator Modal Logic
+      const configModal = document.getElementById('config-modal');
+      const configBtn = document.getElementById('config-btn');
+      const closeConfigBtn = document.getElementById('close-config-btn');
+
+      function updateConfigModalUI() {
+        const cfg = diceEngine.getConfig();
+        const pool = cfg.pool;
+        const materials = cfg.materials;
+
+        // 1. ES6 Integration Code
+        const codeSnippet = `import { PolyDice } from './polydice.js';
+
+// 1. Instantiate PolyDice with your active configuration & theme
+const dice = new PolyDice({
+  THREE,
+  Ammo,
+  scene,
+  initialPool: ${JSON.stringify(pool)},
+  initialMaterials: ${JSON.stringify(materials)},
+  defaultBevel: ${cfg.bevel},
+  defaultBevelSegments: ${cfg.bevelSegments},
+  defaultMaterial: '${cfg.defaultMaterial}',
+  audio: ${cfg.audio}
+});
+
+// 2. Initialize physics & asset pipelines
+await dice.init();
+
+// 3. Roll your dice pool with physics simulation
+const result = await dice.roll({ power: 1.2 });
+console.log('Total:', result.total, 'Breakdown:', result.summary);
+
+// 4. Subscribe to roll events
+dice.on('rollComplete', (res) => {
+  console.log('Settled score:', res.total);
+});`;
+
+        const codeDisplay = document.getElementById('cfg-code-display');
+        if (codeDisplay) codeDisplay.textContent = codeSnippet;
+
+        // 2. Roll String
+        const rollStr = diceEngine.generateTargetRollString();
+        const rollStrInput = document.getElementById('cfg-rollstring-input');
+        if (rollStrInput) rollStrInput.value = rollStr || 'd20: 20';
+
+        // 3. JSON Config
+        const jsonTextarea = document.getElementById('cfg-json-textarea');
+        if (jsonTextarea) jsonTextarea.value = JSON.stringify(cfg, null, 2);
+      }
+
+      if (configBtn && configModal) {
+        configBtn.addEventListener('click', () => {
+          updateConfigModalUI();
+          configModal.classList.add('open');
+        });
+      }
+
+      const closeConfig = () => {
+        if (configModal) configModal.classList.remove('open');
+      };
+      if (closeConfigBtn) closeConfigBtn.addEventListener('click', closeConfig);
+      if (configModal) {
+        configModal.addEventListener('click', (e) => {
+          if (e.target === configModal) closeConfig();
+        });
+      }
+
+      // Tab switching in Config Modal
+      document.querySelectorAll('[data-cfg-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-cfg-tab]').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.cfg-section').forEach(s => s.classList.remove('active'));
+          btn.classList.add('active');
+          const sec = document.getElementById(`cfg-sec-${btn.dataset.cfgTab}`);
+          if (sec) sec.classList.add('active');
+        });
+      });
+
+      // Copy Integration Code
+      const copyActiveCfgBtn = document.getElementById('copy-active-config-btn');
+      if (copyActiveCfgBtn) {
+        copyActiveCfgBtn.addEventListener('click', () => {
+          const text = document.getElementById('cfg-code-display').textContent;
+          navigator.clipboard.writeText(text).then(() => {
+            copyActiveCfgBtn.textContent = '✓ Copied Code!';
+            setTimeout(() => copyActiveCfgBtn.textContent = '📋 Copy Integration Code', 1600);
+          });
+        });
+      }
+
+      // Copy Roll String
+      const copyRollStrBtn = document.getElementById('cfg-copy-rollstring-btn');
+      if (copyRollStrBtn) {
+        copyRollStrBtn.addEventListener('click', () => {
+          const str = document.getElementById('cfg-rollstring-input').value;
+          navigator.clipboard.writeText(str).then(() => {
+            copyRollStrBtn.textContent = '✓ Copied!';
+            setTimeout(() => copyRollStrBtn.textContent = 'Copy String', 1600);
+          });
+        });
+      }
+
+      // Test Roll String directly from modal
+      const testRollStrBtn = document.getElementById('cfg-test-rollstring-btn');
+      if (testRollStrBtn) {
+        testRollStrBtn.addEventListener('click', () => {
+          const str = document.getElementById('cfg-rollstring-input').value;
+          closeConfig();
+          const parsed = diceEngine.parseTargetRollString(str);
+          if (parsed) {
+            diceEngine.rollPredeterminedDice(parsed.dice, parsed.targets, 1.0);
+          } else {
+            diceEngine.roll({ power: 1.0 });
+          }
+        });
+      }
+
+      // Copy JSON Config
+      const copyJsonCfgBtn = document.getElementById('cfg-copy-json-btn');
+      if (copyJsonCfgBtn) {
+        copyJsonCfgBtn.addEventListener('click', () => {
+          const json = document.getElementById('cfg-json-textarea').value;
+          navigator.clipboard.writeText(json).then(() => {
+            copyJsonCfgBtn.textContent = '✓ Copied!';
+            setTimeout(() => copyJsonCfgBtn.textContent = '📋 Copy JSON', 1600);
+          });
+        });
+      }
+
+      // Apply JSON Config to live scene
+      const applyJsonCfgBtn = document.getElementById('cfg-apply-json-btn');
+      if (applyJsonCfgBtn) {
+        applyJsonCfgBtn.addEventListener('click', () => {
+          try {
+            const text = document.getElementById('cfg-json-textarea').value;
+            const parsed = JSON.parse(text);
+            diceEngine.loadConfig(parsed);
+            setBevelUI(diceEngine.bevel, diceEngine.bevelSegments);
+            updateMaterialUI();
+            updatePoolChipsUI();
+            applyJsonCfgBtn.textContent = '✓ Applied to Scene!';
+            setTimeout(() => {
+              applyJsonCfgBtn.textContent = '⚡ Apply Config to Scene';
+              closeConfig();
+              if (currentMode === 'tray') diceEngine.roll({ power: 1.0 });
+            }, 600);
+          } catch (err) {
+            alert('Invalid JSON: ' + err.message);
+          }
+        });
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeSnapshot();
+          closeConfig();
+          if (docsModal) docsModal.classList.remove('open');
+        }
+      });
+
+      const docsModal = document.getElementById('docs-modal');
+      const docsBtn = document.getElementById('docs-btn');
+      const docsCloseBtn = document.getElementById('docs-close-btn');
+      if (docsBtn && docsModal) {
+        docsBtn.addEventListener('click', () => docsModal.classList.add('open'));
+      }
+      if (docsCloseBtn && docsModal) {
+        docsCloseBtn.addEventListener('click', () => docsModal.classList.remove('open'));
+      }
+
+      document.querySelectorAll('.docs-tab-nav button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.docs-tab-nav button').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.docs-section').forEach(s => s.classList.remove('active'));
+          btn.classList.add('active');
+          const secId = `docs-sec-${btn.dataset.tab}`;
+          const sec = document.getElementById(secId);
+          if (sec) sec.classList.add('active');
+        });
+      });
+
+      const copyJsonBtn = document.getElementById('copy-json-btn');
+      if (copyJsonBtn) {
+        copyJsonBtn.addEventListener('click', () => {
+          const text = document.getElementById('json-code').textContent;
+          navigator.clipboard.writeText(text).then(() => {
+            copyJsonBtn.textContent = '✓ Copied';
+            setTimeout(() => copyJsonBtn.textContent = 'Copy', 1500);
+          });
+        });
+      }
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight, false);
+      });
+
+      // =========================================================================
+      // 6. GLOBAL BACKWARD-COMPATIBLE API EXPOSURE
+      // =========================================================================
+
+      window.PolyDice = PolyDice;
+      window.diceEngine = diceEngine;
+      window.renderer = renderer;
+      window.camera = camera;
+      window.scene = scene;
+      window.controls = controls;
+      window.rollDicePool = (p = 1.0, t = null) => diceEngine.roll({ power: p, targets: t });
+      window.rollPredeterminedDice = (d, t, p = 1.0) => diceEngine.rollPredeterminedDice(d, t, p);
+      window.parseTargetRollString = (s) => diceEngine.parseTargetRollString(s);
+      window.setBevel = (b, s) => setBevelUI(b, s);
+      window.setBevelSegments = (s) => setBevelSegmentsUI(s);
+      window.setDiceMaterial = (m) => setDiceMaterialUI(m);
+      window.DICE_MATERIALS = DICE_MATERIALS;
+
+      window.addEventListener('serverDiceRoll', (e) => {
+        if (!e.detail) return;
+        const parsed = diceEngine.parseTargetRollString(e.detail);
+        if (parsed) {
+          const pwr = (typeof e.detail === 'object' && e.detail.power) ? e.detail.power : 1.0;
+          diceEngine.rollPredeterminedDice(parsed.dice, parsed.targets, pwr);
+        }
+      });
+
+      // Populate LLM raw docs block
+      const llmCodeEl = document.getElementById('llm-raw-content');
+      if (llmCodeEl) {
+        fetch('llms.txt').then(r => r.text()).then(txt => {
+          llmCodeEl.textContent = txt;
+        }).catch(() => { });
+      }
+
+      // =========================================================================
+      // 7. ANIMATION & RENDER LOOP
+      // =========================================================================
+
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const deltaTime = Math.min(clock.getDelta(), 0.05);
+
+        if (currentMode === 'tray') {
+          if (isCameraTransitioning) {
+            const targetCam = diceEngine.isShowcase ? diceEngine.showcaseCamPos : trayCamPos;
+            const targetLook = diceEngine.isShowcase ? diceEngine.showcaseTargetPos : trayTargetPos;
+            camera.position.lerp(targetCam, 0.08);
+            controls.target.lerp(targetLook, 0.08);
+            camera.lookAt(controls.target);
+            if (camera.position.distanceToSquared(targetCam) < 0.005) {
+              isCameraTransitioning = false;
+            }
+          }
+          diceEngine.update(deltaTime);
+        } else if (currentMode === 'inspector' && inspectorDieMesh) {
+          if (isCameraTransitioning) {
+            camera.position.lerp(inspectorCamPos, 0.08);
+            controls.target.lerp(inspectorTargetPos, 0.08);
+            camera.lookAt(controls.target);
+            if (camera.position.distanceToSquared(inspectorCamPos) < 0.005) {
+              isCameraTransitioning = false;
+            }
+          }
+          inspectorDieMesh.rotation.y += 0.005;
+          inspectorDieMesh.rotation.x += 0.002;
+        }
+
+        controls.update();
+        renderer.render(scene, camera);
+      }
+
+      // =========================================================================
+      // 8. BOOTSTRAP
+      // =========================================================================
+
+      async function init() {
+        // Start with all 14 dice types and randomized distinct materials from the palette
+        const allTypes = ['d4', 'd6', 'd8', 'd10', 'd12', 'd14', 'd16', 'd20', 'd24', 'd30', 'd48', 'd60', 'd100', 'd120'];
+        const mats = ['ruby', 'emerald', 'sapphire', 'pearl', 'gold', 'silver', 'obsidian'];
+        const randomMats = allTypes.map(() => mats[Math.floor(Math.random() * mats.length)]);
+
+        setBevelUI(0.20, 4);
+        setDiceMaterialUI('ruby');
+
+        diceEngine.setDicePool(allTypes, randomMats);
+        updatePoolChipsUI();
+
+        await diceEngine.init();
+        visualTray = diceEngine.createDefaultVisualTray();
+        window.visualTray = visualTray;
+
+        switchMode('tray');
+        animate();
+
+        // Start the app with an immediate roll of all 14 dice in the tray
+        diceEngine.roll({ power: 1.0 });
+      }
+
+      init();
+    </script>
+</body>
+
+</html>
