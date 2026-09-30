@@ -453,8 +453,6 @@ function buildHedronMesh(rawPoints, isDual = false, bevel = 0.0, bevelSegments =
     const col = fIdx % cols;
     const row = Math.floor(fIdx / cols);
 
-    faceInfos.push({ inradiusNorm });
-
     // 3D center of this face for physics roll evaluation
     const center3D = new THREE.Vector3();
     poly.forEach(pt => center3D.add(pt));
@@ -476,6 +474,23 @@ function buildHedronMesh(rawPoints, isDual = false, bevel = 0.0, bevelSegments =
     const draw2D = bevel > 0.001
       ? local2D.map(p => new THREE.Vector2().lerpVectors(p, center, bevel))
       : local2D;
+
+    // Normalized 2D polygon vertices relative to face cell center (Y inverted for canvas drawing)
+    const polygonNorm2D = draw2D.map(p => ({
+      x: (p.x - center.x) / boundingSpan,
+      y: -(p.y - center.y) / boundingSpan
+    }));
+
+    const outerPolygonNorm2D = local2D.map(p => ({
+      x: (p.x - center.x) / boundingSpan,
+      y: -(p.y - center.y) / boundingSpan
+    }));
+
+    faceInfos.push({
+      inradiusNorm,
+      polygonNorm2D,
+      outerPolygonNorm2D
+    });
 
     for (let i = 1; i < drawPoly.length - 1; i++) {
       const tri = [0, i, i + 1];
@@ -909,6 +924,40 @@ const DICE_MATERIALS = {
     clearcoatRoughness: 0.012,
     transmission: 0.0,
     ior: 1.5
+  },
+  cyber: {
+    id: 'cyber',
+    name: 'Cyberpunk Neon',
+    baseColor: '#0a0e17', // matte dark high-tech chassis
+    faceFillColor: '#101726', // indigo-slate face interior
+    edgeColor: '#00f7ff', // glowing electric cyan edge outline
+    edgeWidth: 0.040,
+    fontFamily: 'Outfit',
+    numOcclusionColor: 'rgba(0, 247, 255, 0.45)',
+    numFillColor: '#ffffff', // pure laser white font
+    roughness: 0.18,
+    metalness: 0.35,
+    clearcoat: 0.95,
+    clearcoatRoughness: 0.04,
+    transmission: 0.0,
+    ior: 1.52
+  },
+  paladin: {
+    id: 'paladin',
+    name: 'Paladin Ivory & Gold',
+    baseColor: '#2b2318', // dark antiqued bronze chassis
+    faceFillColor: '#f7f4ea', // warm polished ivory porcelain face interior
+    edgeColor: '#d4af37', // regal polished gold filigree edge border
+    edgeWidth: 0.042,
+    fontFamily: 'Cinzel',
+    numOcclusionColor: 'rgba(212, 175, 55, 0.6)',
+    numFillColor: '#2b2318', // deep bronze lacquer font
+    roughness: 0.22,
+    metalness: 0.12,
+    clearcoat: 0.88,
+    clearcoatRoughness: 0.06,
+    transmission: 0.0,
+    ior: 1.54
   }
 };
 
@@ -981,10 +1030,20 @@ function createDiceMaterial(diffuseMap, normalMap, matKey = currentMaterial, isF
   return mat;
 }
 
-function createDiceTextures(numFaces, cols, rows, faceInfos, isInspector = false, matKey = currentMaterial, bevel = currentBevel) {
+function createDiceTextures(numFaces, cols, rows, faceInfos, isInspector = false, matKey = currentMaterial, bevel = currentBevel, styleOptions = {}) {
   // 1024 for responsive physics tray runtime, 2048 for high-res inspector
   const size = isInspector ? 2048 : 1024;
   const matDef = DICE_MATERIALS[matKey] || DICE_MATERIALS.obsidian;
+  const mergedStyle = {
+    fontFamily: styleOptions.fontFamily !== undefined ? styleOptions.fontFamily : (matDef.fontFamily || null),
+    fontWeight: styleOptions.fontWeight !== undefined ? styleOptions.fontWeight : (matDef.fontWeight || 'bold'),
+    edgeColor: styleOptions.edgeColor !== undefined ? styleOptions.edgeColor : (matDef.edgeColor || null),
+    edgeWidth: styleOptions.edgeWidth !== undefined ? styleOptions.edgeWidth : (matDef.edgeWidth != null ? matDef.edgeWidth : null),
+    edgeInset: styleOptions.edgeInset !== undefined ? styleOptions.edgeInset : (matDef.edgeInset != null ? matDef.edgeInset : 0.0),
+    faceFillColor: styleOptions.faceFillColor !== undefined ? styleOptions.faceFillColor : (matDef.faceFillColor || null),
+    edgeGroove: styleOptions.edgeGroove !== undefined ? styleOptions.edgeGroove : (matDef.edgeGroove !== false),
+    edgeOpacityMask: styleOptions.edgeOpacityMask !== undefined ? styleOptions.edgeOpacityMask : (matDef.edgeOpacityMask !== false)
+  };
 
   // 1. Heightmap Canvas
   const heightCanvas = document.createElement('canvas');
@@ -1101,9 +1160,100 @@ function createDiceTextures(numFaces, cols, rows, faceInfos, isInspector = false
     else if (text.length >= 3) fontSize = Math.floor(fontSize * 0.54);
     if (numFaces >= 20 && text.length === 1) fontSize = Math.floor(fontSize * 0.88);
     if (numFaces >= 60) fontSize = Math.floor(fontSize * 0.90);
-    fontSize = Math.max(8, fontSize);
+    // Optional Face Polygon Fill & Edge Outline Styling
+    const faceInfo = faceInfos[i];
+    const poly2D = faceInfo?.polygonNorm2D || [];
+    const hasFaceFill = Boolean(mergedStyle.faceFillColor);
+    const hasEdge = Boolean(mergedStyle.edgeColor);
 
-    const fontStack = `bold ${fontSize}px "Cinzel", "Georgia", "Times New Roman", serif`;
+    if (poly2D.length >= 3 && (hasFaceFill || hasEdge)) {
+      const scale = Math.max(0.1, 1.0 - (mergedStyle.edgeInset || 0));
+      const edgeWidthVal = mergedStyle.edgeWidth != null ? mergedStyle.edgeWidth : 0.032;
+      const edgeLineWidth = (edgeWidthVal >= 1) ? edgeWidthVal : Math.max(1.5, Math.round(baseDim * edgeWidthVal));
+
+      const tracePolygon = (ctx) => {
+        ctx.beginPath();
+        for (let pIdx = 0; pIdx < poly2D.length; pIdx++) {
+          const pt = poly2D[pIdx];
+          const px = cx + pt.x * scale * baseDim;
+          const py = cy + pt.y * scale * baseDim;
+          if (pIdx === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+      };
+
+      // 1. Diffuse Face Fill
+      if (hasFaceFill) {
+        dCtx.save();
+        tracePolygon(dCtx);
+        dCtx.fillStyle = mergedStyle.faceFillColor;
+        dCtx.fill();
+        dCtx.restore();
+      }
+
+      // 2. Diffuse Edge Outline
+      if (hasEdge) {
+        dCtx.save();
+        tracePolygon(dCtx);
+        dCtx.strokeStyle = mergedStyle.edgeColor;
+        dCtx.lineWidth = edgeLineWidth;
+        dCtx.lineJoin = 'round';
+        dCtx.stroke();
+        dCtx.restore();
+      }
+
+      // 3. Normal Map Participation (Engraved / Beveled Edge on Heightmap Canvas)
+      if (hasEdge && mergedStyle.edgeGroove) {
+        const edgeBlur = Math.max(2, Math.round(fontSize * (0.016 + bevelRatio * 0.020) * 0.75));
+        hCtx.save();
+        tracePolygon(hCtx);
+        hCtx.strokeStyle = '#000000';
+        hCtx.shadowColor = '#000000';
+        hCtx.shadowBlur = edgeBlur;
+        hCtx.lineWidth = edgeLineWidth;
+        hCtx.lineJoin = 'round';
+        hCtx.stroke();
+        hCtx.restore();
+      }
+
+      // 4. Transmission & Alpha Map Masking
+      if (mergedStyle.edgeOpacityMask) {
+        // Transmission Map (black = 0.0 transmission = 100% solid & opaque)
+        tCtx.save();
+        tracePolygon(tCtx);
+        if (hasFaceFill) {
+          tCtx.fillStyle = '#000000';
+          tCtx.fill();
+        }
+        if (hasEdge) {
+          tCtx.strokeStyle = '#000000';
+          tCtx.lineWidth = edgeLineWidth;
+          tCtx.lineJoin = 'round';
+          tCtx.stroke();
+        }
+        tCtx.restore();
+
+        // Alpha / Opacity Map (white = 1.0 opacity = 100% solid & opaque)
+        aCtx.save();
+        tracePolygon(aCtx);
+        if (hasFaceFill) {
+          aCtx.fillStyle = '#ffffff';
+          aCtx.fill();
+        }
+        if (hasEdge) {
+          aCtx.strokeStyle = '#ffffff';
+          aCtx.lineWidth = edgeLineWidth;
+          aCtx.lineJoin = 'round';
+          aCtx.stroke();
+        }
+        aCtx.restore();
+      }
+    }
+
+    const fontStack = mergedStyle.fontFamily
+      ? `${mergedStyle.fontWeight || 'bold'} ${fontSize}px "${mergedStyle.fontFamily}", sans-serif`
+      : `bold ${fontSize}px "Cinzel", "Georgia", "Times New Roman", serif`;
 
     // Measure optical font metrics for exact mathematical centering
     dCtx.font = fontStack;
@@ -1659,6 +1809,16 @@ export class PolyDice {
       ? Boolean(options.fastPhysics)
       : (options.accuratePhysics ? false : true); // Defaults to fast (unbeveled) physics
 
+    // Face & Edge Styling defaults
+    this.fontFamily = options.fontFamily || null;
+    this.fontWeight = options.fontWeight || 'bold';
+    this.edgeColor = options.edgeColor || null;
+    this.edgeWidth = options.edgeWidth != null ? options.edgeWidth : null;
+    this.edgeInset = options.edgeInset != null ? options.edgeInset : 0.0;
+    this.faceFillColor = options.faceFillColor || null;
+    this.edgeGroove = options.edgeGroove !== false;
+    this.edgeOpacityMask = options.edgeOpacityMask !== false;
+
     // Dice pool and instances
     this.dicePool = options.initialPool ? [...options.initialPool] : ['d4', 'd6', 'd8', 'd10', 'd10', 'd12', 'd20'];
     this.poolMaterials = options.initialMaterials ? [...options.initialMaterials] : [];
@@ -1904,8 +2064,31 @@ export class PolyDice {
     const bevel = options.bevel != null ? options.bevel : this.bevel;
     const bevelSegments = options.bevelSegments != null ? options.bevelSegments : this.bevelSegments;
     const materialKey = options.material || this.materialKey;
+    const matDef = DICE_MATERIALS[materialKey] || {};
 
-    const cacheKey = `${type}_${bevel}_${bevelSegments}_${materialKey}`;
+    const styleOptions = {
+      fontFamily: options.fontFamily !== undefined ? options.fontFamily : this.fontFamily,
+      fontWeight: options.fontWeight !== undefined ? options.fontWeight : this.fontWeight,
+      edgeColor: options.edgeColor !== undefined ? options.edgeColor : this.edgeColor,
+      edgeWidth: options.edgeWidth !== undefined ? options.edgeWidth : this.edgeWidth,
+      edgeInset: options.edgeInset !== undefined ? options.edgeInset : this.edgeInset,
+      faceFillColor: options.faceFillColor !== undefined ? options.faceFillColor : this.faceFillColor,
+      edgeGroove: options.edgeGroove !== undefined ? options.edgeGroove : this.edgeGroove,
+      edgeOpacityMask: options.edgeOpacityMask !== undefined ? options.edgeOpacityMask : this.edgeOpacityMask
+    };
+
+    const effectiveFont = styleOptions.fontFamily || matDef.fontFamily || '';
+    const effectiveWeight = styleOptions.fontWeight || matDef.fontWeight || '';
+    const effectiveEdge = styleOptions.edgeColor || matDef.edgeColor || '';
+    const effectiveWidth = styleOptions.edgeWidth != null ? styleOptions.edgeWidth : (matDef.edgeWidth != null ? matDef.edgeWidth : '');
+    const effectiveInset = styleOptions.edgeInset != null ? styleOptions.edgeInset : (matDef.edgeInset != null ? matDef.edgeInset : '');
+    const effectiveFill = styleOptions.faceFillColor || matDef.faceFillColor || '';
+
+    const styleKey = (effectiveFont || effectiveEdge || effectiveFill || effectiveWidth !== '' || effectiveInset !== '')
+      ? `_${effectiveFont}_${effectiveWeight}_${effectiveEdge}_${effectiveWidth}_${effectiveInset}_${effectiveFill}`
+      : '';
+
+    const cacheKey = `${type}_${bevel}_${bevelSegments}_${materialKey}${styleKey}`;
     if (this.diceAssetCache.has(cacheKey)) {
       return this.diceAssetCache.get(cacheKey);
     }
@@ -1934,7 +2117,7 @@ export class PolyDice {
 
     const { geometry, basePoints, numFaces, cols, rows, faceInfos, faceDescriptors } = result;
     const { diffuseMap, normalMap, iridescenceThicknessMap, transmissionMap, alphaMap, diffuseCanvas, normalCanvas } =
-      createDiceTextures(numFaces, cols, rows, faceInfos, false, materialKey, bevel);
+      createDiceTextures(numFaces, cols, rows, faceInfos, false, materialKey, bevel, styleOptions);
 
     const material = createDiceMaterial(
       diffuseMap,
@@ -1981,6 +2164,16 @@ export class PolyDice {
     const bevel = options.bevel != null ? options.bevel : this.bevel;
     const bevelSegments = options.bevelSegments != null ? options.bevelSegments : this.bevelSegments;
     const materialKey = options.material || this.materialKey;
+    const styleOptions = {
+      fontFamily: options.fontFamily !== undefined ? options.fontFamily : this.fontFamily,
+      fontWeight: options.fontWeight !== undefined ? options.fontWeight : this.fontWeight,
+      edgeColor: options.edgeColor !== undefined ? options.edgeColor : this.edgeColor,
+      edgeWidth: options.edgeWidth !== undefined ? options.edgeWidth : this.edgeWidth,
+      edgeInset: options.edgeInset !== undefined ? options.edgeInset : this.edgeInset,
+      faceFillColor: options.faceFillColor !== undefined ? options.faceFillColor : this.faceFillColor,
+      edgeGroove: options.edgeGroove !== undefined ? options.edgeGroove : this.edgeGroove,
+      edgeOpacityMask: options.edgeOpacityMask !== undefined ? options.edgeOpacityMask : this.edgeOpacityMask
+    };
 
     let result;
     switch (type) {
@@ -2004,7 +2197,7 @@ export class PolyDice {
     }
 
     const { numFaces, cols, rows, faceInfos } = result;
-    return createDiceTextures(numFaces, cols, rows, faceInfos, true, materialKey, bevel);
+    return createDiceTextures(numFaces, cols, rows, faceInfos, true, materialKey, bevel, styleOptions);
   }
 
   setBevel(bevelRatio, segments = null) {
@@ -2014,11 +2207,12 @@ export class PolyDice {
     // Immediately update geometry across all active dice instances in the tray
     this.activeDiceInstances.forEach(d => {
       const mat = d.materialKey || this.materialKey;
-      const asset = this.getDiceAsset(d.type, {
+      const opts = Object.assign({
         bevel: this.bevel,
         bevelSegments: this.bevelSegments,
         material: mat
-      });
+      }, d.styleOptions || {});
+      const asset = this.getDiceAsset(d.type, opts);
       d.mesh.geometry = asset.geometry;
       d.mesh.material = asset.material;
       if (d.outlineMesh) d.outlineMesh.geometry = asset.geometry;
@@ -2040,11 +2234,12 @@ export class PolyDice {
     // Immediately update material across all currently active dice instances
     this.activeDiceInstances.forEach(d => {
       d.materialKey = materialKey;
-      const asset = this.getDiceAsset(d.type, {
+      const opts = Object.assign({
         bevel: this.bevel,
         bevelSegments: this.bevelSegments,
         material: materialKey
-      });
+      }, d.styleOptions || {});
+      const asset = this.getDiceAsset(d.type, opts);
       d.mesh.material = asset.material;
       d.asset = asset;
     });
@@ -2075,16 +2270,117 @@ export class PolyDice {
     if (!d || !d.mesh) return null;
 
     d.materialKey = materialKey;
-    const asset = this.getDiceAsset(d.type, {
+    const opts = Object.assign({
       bevel: this.bevel,
       bevelSegments: this.bevelSegments,
       material: materialKey
-    });
+    }, d.styleOptions || {});
+    const asset = this.getDiceAsset(d.type, opts);
 
     d.mesh.material = asset.material;
     d.asset = asset;
     this.emit('dieMaterialChange', { die: d, materialKey, index: idx });
     return d;
+  }
+
+  /**
+   * Set global face and edge styling across all active dice.
+   * @param {Object} style { fontFamily, fontWeight, edgeColor, edgeWidth, edgeInset, faceFillColor, edgeGroove, edgeOpacityMask }
+   */
+  setFaceStyle(style = {}) {
+    if (style.fontFamily !== undefined) this.fontFamily = style.fontFamily;
+    if (style.fontWeight !== undefined) this.fontWeight = style.fontWeight;
+    if (style.edgeColor !== undefined) this.edgeColor = style.edgeColor;
+    if (style.edgeWidth !== undefined) this.edgeWidth = style.edgeWidth;
+    if (style.edgeInset !== undefined) this.edgeInset = style.edgeInset;
+    if (style.faceFillColor !== undefined) this.faceFillColor = style.faceFillColor;
+    if (style.edgeGroove !== undefined) this.edgeGroove = style.edgeGroove;
+    if (style.edgeOpacityMask !== undefined) this.edgeOpacityMask = style.edgeOpacityMask;
+
+    this.activeDiceInstances.forEach(d => {
+      const mat = d.materialKey || this.materialKey;
+      const opts = Object.assign({
+        bevel: this.bevel,
+        bevelSegments: this.bevelSegments,
+        material: mat,
+        fontFamily: this.fontFamily,
+        fontWeight: this.fontWeight,
+        edgeColor: this.edgeColor,
+        edgeWidth: this.edgeWidth,
+        edgeInset: this.edgeInset,
+        faceFillColor: this.faceFillColor,
+        edgeGroove: this.edgeGroove,
+        edgeOpacityMask: this.edgeOpacityMask
+      }, d.styleOptions || {});
+      const asset = this.getDiceAsset(d.type, opts);
+      d.mesh.geometry = asset.geometry;
+      d.mesh.material = asset.material;
+      if (d.outlineMesh) d.outlineMesh.geometry = asset.geometry;
+      d.asset = asset;
+    });
+
+    this.emit('styleChange', this.getFaceStyle());
+    return this;
+  }
+
+  /**
+   * Set custom font for dice numbers.
+   * @param {string} fontFamily e.g. 'Outfit', 'Cinzel', 'JetBrains Mono', 'Impact'
+   * @param {string} fontWeight e.g. 'bold', '700', 'normal'
+   */
+  setFont(fontFamily, fontWeight = 'bold') {
+    return this.setFaceStyle({ fontFamily, fontWeight });
+  }
+
+  /**
+   * Set per-die face and edge style override.
+   * @param {Object|number} dieOrId Die instance or numerical ID
+   * @param {Object} style Style properties to override for this specific die
+   */
+  setDieStyle(dieOrId, style = {}) {
+    let d = null;
+    if (typeof dieOrId === 'object') d = dieOrId;
+    else d = this.activeDiceInstances.find(x => x.id === dieOrId);
+    if (!d || !d.mesh) return null;
+
+    d.styleOptions = Object.assign(d.styleOptions || {}, style);
+    const mat = d.materialKey || this.materialKey;
+    const opts = Object.assign({
+      bevel: this.bevel,
+      bevelSegments: this.bevelSegments,
+      material: mat,
+      fontFamily: this.fontFamily,
+      fontWeight: this.fontWeight,
+      edgeColor: this.edgeColor,
+      edgeWidth: this.edgeWidth,
+      edgeInset: this.edgeInset,
+      faceFillColor: this.faceFillColor,
+      edgeGroove: this.edgeGroove,
+      edgeOpacityMask: this.edgeOpacityMask
+    }, d.styleOptions);
+
+    const asset = this.getDiceAsset(d.type, opts);
+    d.mesh.geometry = asset.geometry;
+    d.mesh.material = asset.material;
+    if (d.outlineMesh) d.outlineMesh.geometry = asset.geometry;
+    d.asset = asset;
+    return d;
+  }
+
+  /**
+   * Get current active global face styling configuration.
+   */
+  getFaceStyle() {
+    return {
+      fontFamily: this.fontFamily,
+      fontWeight: this.fontWeight,
+      edgeColor: this.edgeColor,
+      edgeWidth: this.edgeWidth,
+      edgeInset: this.edgeInset,
+      faceFillColor: this.faceFillColor,
+      edgeGroove: this.edgeGroove,
+      edgeOpacityMask: this.edgeOpacityMask
+    };
   }
 
   getDieMaterial(dieOrId) {

@@ -198,12 +198,52 @@
             style="background: radial-gradient(circle at 35% 35%, #2d68c4, #0b1a3d); border: 1px solid #66a5ff;"></span>
           <span>Sapphire</span>
         </button>
-        <button class="mat-btn" data-mat="pearl" title="Opalescent Mother of Pearl with Iridescent Rainbow Sheen"
-          style="grid-column: span 3; justify-content: center;">
+        <button class="mat-btn" data-mat="pearl" title="Opalescent Mother of Pearl with Iridescent Rainbow Sheen">
           <span class="mat-swatch"
             style="background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ffe4f0 35%, #d0f8ea 70%, #ded0f8 100%); border: 1px solid #eed8ea;"></span>
-          <span>Opalescent Pearl</span>
+          <span>Pearl</span>
         </button>
+        <button class="mat-btn" data-mat="cyber" title="Cyberpunk Neon with Laser Cyan Outline">
+          <span class="mat-swatch"
+            style="background: #0a0e17; border: 1px solid #00f7ff;"></span>
+          <span>Cyber</span>
+        </button>
+        <button class="mat-btn" data-mat="paladin" title="Paladin Ivory & Gold Porcelain">
+          <span class="mat-swatch"
+            style="background: #f7f4ea; border: 1px solid #d4af37;"></span>
+          <span>Paladin</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="face-style-section" style="margin-top: 5px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+        <span class="section-title" style="margin: 0;">Face & Edge Style</span>
+        <span id="face-style-label" style="font-size: 8.5px; color: var(--accent); font-weight: 600;">Standard</span>
+      </div>
+      
+      <!-- Font Family Selector -->
+      <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 4px;">
+        <span style="font-size: 9px; color: var(--text-muted); width: 32px;">Font:</span>
+        <select id="font-family-select" class="small-btn" style="flex: 1; text-align: left; padding: 2px 4px; font-size: 9.5px; background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+          <option value="" selected>Cinzel (Roman Serif)</option>
+          <option value="Outfit">Outfit (Modern Sans)</option>
+          <option value="JetBrains Mono">JetBrains Mono (Code)</option>
+          <option value="Impact">Impact (Heavy Sans)</option>
+          <option value="Georgia">Georgia (Classic Book)</option>
+        </select>
+      </div>
+
+      <!-- Edge Style Presets -->
+      <div style="display: flex; gap: 4px; align-items: center;">
+        <span style="font-size: 9px; color: var(--text-muted); width: 32px;">Edge:</span>
+        <div class="presets-row" id="edge-preset-row" style="flex: 1; gap: 2px;">
+          <button class="small-btn active" data-edge="none" style="padding: 2px 4px; font-size: 8.5px;" title="Clean beveled facet">None</button>
+          <button class="small-btn" data-edge="gold" style="padding: 2px 4px; font-size: 8.5px;" title="Gold filigree edge outline">Gold</button>
+          <button class="small-btn" data-edge="cyber" style="padding: 2px 4px; font-size: 8.5px;" title="Electric cyan edge outline">Cyan</button>
+          <button class="small-btn" data-edge="crimson" style="padding: 2px 4px; font-size: 8.5px;" title="Crimson edge outline">Ruby</button>
+          <button class="small-btn" data-edge="white" style="padding: 2px 4px; font-size: 8.5px;" title="Pure white edge outline">White</button>
+        </div>
       </div>
     </div>
 
@@ -1621,6 +1661,53 @@
       document.querySelectorAll('#material-selector .mat-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           setDiceMaterialUI(btn.dataset.mat);
+        });
+      });
+
+      // Font Family Selector Listener
+      const fontSelect = document.getElementById('font-family-select');
+      if (fontSelect) {
+        fontSelect.addEventListener('change', () => {
+          const font = fontSelect.value || null;
+          diceEngine.setFont(font);
+          if (currentMode === 'inspector' && currentInspectorDie) {
+            setInspectorPolyhedron(currentInspectorDie);
+          }
+        });
+      }
+
+      // Face Edge Styling Preset Listeners
+      const edgeButtons = document.querySelectorAll('#edge-preset-row button');
+      edgeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          edgeButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const edgeType = btn.dataset.edge;
+          let edgeColor = null;
+          let faceFillColor = null;
+          let edgeWidth = 0.035;
+
+          if (edgeType === 'gold') {
+            edgeColor = '#ffd700';
+            edgeWidth = 0.038;
+          } else if (edgeType === 'cyber') {
+            edgeColor = '#00f7ff';
+            faceFillColor = '#101726';
+            edgeWidth = 0.040;
+          } else if (edgeType === 'crimson') {
+            edgeColor = '#ff2a4b';
+            edgeWidth = 0.036;
+          } else if (edgeType === 'white') {
+            edgeColor = '#ffffff';
+            edgeWidth = 0.032;
+          }
+
+          diceEngine.setFaceStyle({ edgeColor, faceFillColor, edgeWidth });
+          const label = document.getElementById('face-style-label');
+          if (label) label.textContent = edgeType === 'none' ? 'Standard' : btn.textContent;
+          if (currentMode === 'inspector' && currentInspectorDie) {
+            setInspectorPolyhedron(currentInspectorDie);
+          }
         });
       });
 
