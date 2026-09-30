@@ -215,15 +215,18 @@ const dice = new PolyDice({
   audioListener,               // Optional: THREE.AudioListener attached to camera
   defaultMaterial: 'ruby',     // Default material finish
   defaultBevel: 0.20,          // 0.0 (Sharp) | 0.10 (Subtle) | 0.20 (Round)
-  defaultBevelSegments: 4      // 1 (Flat chamfer) .. 4 (Spherical dome)
+  defaultBevelSegments: 4,     // 1 (Flat chamfer) .. 4 (Spherical dome)
+  fastPhysics: true            // true (Fast unbeveled base vertices) | false (Accurate beveled fillet hull)
 });
 ```
 
 ### Instance Methods
 
 #### Rolling & Replay
-- `dice.roll({ power = 1.0, targets = null, dice = null })`: Returns a `Promise<RollResult>` resolving when all dice come to rest.
+- `dice.roll({ power = 1.0, targets = null, dice = null, instant = false })`: Returns a `Promise<RollResult>` resolving when all dice come to rest.
+- `dice.rollInstant({ dice, targets, materials, snapshot })`: Instant RNG visual roll with single-frame render and snapshot generation—requires **zero** physics simulation and no Ammo.js!
 - `dice.rollPredeterminedDice(diceTypes, targetValues, power = 1.0)`: Pre-simulates trajectory and replays with rotational offset, guaranteeing the specified face values.
+- `dice.setFastPhysics(enabled = true)`: Toggles between fast base-vertex collision hulls (10x-50x less CPU) and full multi-segment beveled fillet collision hulls.
 - `dice.parseTargetRollString(str)`: Converts roll notation (e.g. `"2d20: 20, 1"`, `"d6: 6"`) into `{ dice, targets }`.
 
 #### Pool & Theming

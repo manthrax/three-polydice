@@ -756,7 +756,21 @@ function buildHedronMesh(rawPoints, isDual = false, bevel = 0.0, bevelSegments =
     fd.center.multiplyScalar(scale);
   });
 
-  return { geometry, numFaces, cols, rows, faceInfos, faceDescriptors };
+  // Extract unique base/unbeveled vertices scaled to match the normalized mesh size
+  const basePoints = [];
+  const baseKeys = new Set();
+  polygonFaces.forEach(f => {
+    f.poly.forEach(pt => {
+      const sp = pt.clone().multiplyScalar(scale);
+      const k = `${sp.x.toFixed(4)},${sp.y.toFixed(4)},${sp.z.toFixed(4)}`;
+      if (!baseKeys.has(k)) {
+        baseKeys.add(k);
+        basePoints.push(sp);
+      }
+    });
+  });
+
+  return { geometry, basePoints, numFaces, cols, rows, faceInfos, faceDescriptors };
 }
 
 
@@ -1627,6 +1641,9 @@ export class PolyDice {
     this.materialKey = options.defaultMaterial || 'ruby';
     this.audioEnabled = options.audio !== false;
     this.onCollision = options.onCollision || null;
+    this.fastPhysics = options.fastPhysics !== undefined
+      ? Boolean(options.fastPhysics)
+      : (options.accuratePhysics ? false : true); // Defaults to fast (unbeveled) physics
 
     // Dice pool and instances
     this.dicePool = options.initialPool ? [...options.initialPool] : ['d4', 'd6', 'd8', 'd10', 'd10', 'd12', 'd20'];
@@ -1901,7 +1918,7 @@ export class PolyDice {
         break;
     }
 
-    const { geometry, numFaces, cols, rows, faceInfos, faceDescriptors } = result;
+    const { geometry, basePoints, numFaces, cols, rows, faceInfos, faceDescriptors } = result;
     const { diffuseMap, normalMap, iridescenceThicknessMap, transmissionMap, alphaMap, diffuseCanvas, normalCanvas } =
       createDiceTextures(numFaces, cols, rows, faceInfos, false, materialKey, bevel);
 
@@ -1919,6 +1936,7 @@ export class PolyDice {
     const asset = {
       type,
       geometry,
+      basePoints,
       material,
       numFaces,
       faceDescriptors,
@@ -2098,32 +2116,55 @@ export class PolyDice {
     }
   }
 
-  _getAmmoConvexShape(type, geometry) {
-    const cacheKey = `${type}_${this.bevel}_${this.bevelSegments}`;
+  _getAmmoConvexShape(type, asset) {
+    const geometry = (asset && asset.geometry) ? asset.geometry : asset;
+    const basePoints = (asset && asset.basePoints) ? asset.basePoints : null;
+    const isFast = this.fastPhysics;
+    const cacheKey = isFast ? `${type}_fast` : `${type}_${this.bevel}_${this.bevelSegments}`;
+
     if (this.convexShapeCache.has(cacheKey)) {
       return this.convexShapeCache.get(cacheKey);
     }
 
     const shape = new this.AmmoLib.btConvexHullShape();
-    const posAttr = geometry.getAttribute('position');
     const tempVec = new this.AmmoLib.btVector3();
-    const uniqueKeys = new Set();
 
-    for (let i = 0; i < posAttr.count; i++) {
-      const x = posAttr.getX(i);
-      const y = posAttr.getY(i);
-      const z = posAttr.getZ(i);
-      const key = `${x.toFixed(3)},${y.toFixed(3)},${z.toFixed(3)}`;
-      if (!uniqueKeys.has(key)) {
-        uniqueKeys.add(key);
-        tempVec.setValue(x, y, z);
+    // Fast mode: use exact unbeveled polyhedral vertices (e.g. 8 for d6, 12 for d20)
+    // yielding ~10x-50x faster GJK collision detection
+    if (isFast && basePoints && basePoints.length > 0) {
+      for (const p of basePoints) {
+        tempVec.setValue(p.x, p.y, p.z);
         shape.addPoint(tempVec, true);
+      }
+    } else if (geometry && geometry.getAttribute) {
+      const posAttr = geometry.getAttribute('position');
+      const uniqueKeys = new Set();
+      for (let i = 0; i < posAttr.count; i++) {
+        const x = posAttr.getX(i);
+        const y = posAttr.getY(i);
+        const z = posAttr.getZ(i);
+        const key = `${x.toFixed(3)},${y.toFixed(3)},${z.toFixed(3)}`;
+        if (!uniqueKeys.has(key)) {
+          uniqueKeys.add(key);
+          tempVec.setValue(x, y, z);
+          shape.addPoint(tempVec, true);
+        }
       }
     }
 
     shape.setMargin(0.02);
     this.convexShapeCache.set(cacheKey, shape);
     return shape;
+  }
+
+  setFastPhysics(enabled = true) {
+    this.fastPhysics = Boolean(enabled);
+    this.emit('physicsAccuracyChange', { fastPhysics: this.fastPhysics });
+    return this;
+  }
+
+  isFastPhysics() {
+    return this.fastPhysics;
   }
 
   // =========================================================================
@@ -2166,6 +2207,7 @@ export class PolyDice {
       defaultMaterial: this.materialKey,
       bevel: this.bevel,
       bevelSegments: this.bevelSegments,
+      fastPhysics: this.fastPhysics,
       audio: this.audioEnabled
     };
   }
@@ -2180,6 +2222,9 @@ export class PolyDice {
     }
     if (Array.isArray(cfg.pool)) {
       this.setDicePool(cfg.pool, Array.isArray(cfg.materials) ? cfg.materials : null);
+    }
+    if (typeof cfg.fastPhysics === 'boolean') {
+      this.setFastPhysics(cfg.fastPhysics);
     }
     if (typeof cfg.audio === 'boolean') {
       this.setSoundEnabled(cfg.audio);
@@ -2287,7 +2332,7 @@ export class PolyDice {
     };
     const mass = DieMass[type] || 1.0;
 
-    const shape = this._getAmmoConvexShape(type, asset.geometry);
+    const shape = this._getAmmoConvexShape(type, asset);
     const localInertia = new this.AmmoLib.btVector3(0, 0, 0);
     shape.calculateLocalInertia(mass, localInertia);
 

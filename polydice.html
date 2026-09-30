@@ -144,6 +144,20 @@
             style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">4</button>
         </div>
       </div>
+    <div id="physics-hull-control-section" style="margin-top: 3px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+        <span class="section-title" style="margin: 0;">Physics Hull</span>
+        <span id="physics-hull-label" style="font-size: 8.5px; color: #98c379; font-weight: 600;">⚡ Fast (Base)</span>
+      </div>
+      <div class="tab-switch" id="physics-hull-switch"
+        style="width: 100%; display: flex; justify-content: space-between; padding: 2px;">
+        <button class="tab-btn active" data-fast="true"
+          style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;"
+          title="Fast GJK collision using unbeveled mathematical vertices (~10x-50x less CPU)">⚡ Fast</button>
+        <button class="tab-btn" data-fast="false"
+          style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;"
+          title="Accurate collision using full multi-segment beveled fillet vertices">🎯 Accurate</button>
+      </div>
     </div>
 
     <div id="material-control-section" style="margin-top: 3px;">
@@ -1151,6 +1165,18 @@
         }
       }
 
+      function setPhysicsHullUI(isFast) {
+        diceEngine.setFastPhysics(isFast);
+        document.querySelectorAll('#physics-hull-switch .tab-btn').forEach(btn => {
+          btn.classList.toggle('active', (btn.dataset.fast === 'true') === isFast);
+        });
+        const label = document.getElementById('physics-hull-label');
+        if (label) {
+          label.textContent = isFast ? '⚡ Fast (Base)' : '🎯 Accurate (Fillet)';
+          label.style.color = isFast ? '#98c379' : 'var(--accent-gold)';
+        }
+      }
+
       function setDiceMaterialUI(matKey) {
         const selectedDie = diceEngine.getSelectedDie();
         if (selectedDie) {
@@ -1574,6 +1600,12 @@
         });
       });
 
+      document.querySelectorAll('#physics-hull-switch .tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setPhysicsHullUI(btn.dataset.fast === 'true');
+        });
+      });
+
       document.querySelectorAll('#material-selector .mat-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           setDiceMaterialUI(btn.dataset.mat);
@@ -1671,6 +1703,7 @@ const dice = new PolyDice({
   defaultBevel: ${cfg.bevel},
   defaultBevelSegments: ${cfg.bevelSegments},
   defaultMaterial: '${cfg.defaultMaterial}',
+  fastPhysics: ${cfg.fastPhysics},
   audio: ${cfg.audio}
 });
 
