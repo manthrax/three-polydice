@@ -2,11 +2,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ConvexHull } from 'three/addons/math/ConvexHull.js';
 
-// Attach ConvexHull to THREE so passing THREE satisfies the ConvexHull requirement
-if (THREE && !THREE.ConvexHull) {
-  THREE.ConvexHull = ConvexHull;
-}
-
 export { THREE, ConvexHull, OrbitControls };
 
 /**
