@@ -1836,8 +1836,8 @@ export class PolyDice {
     // Emerald Casino Velvet Felt Floor
     const feltGeo = new THREE.BoxGeometry(TRAY_SIZE, 0.4, TRAY_SIZE);
     const feltMat = new THREE.MeshStandardMaterial({
-      color: 'rgba(0, 62, 11, 1)', // Rich, luminous casino emerald velvet felt
-      roughness: 0.65,
+      color: '#0d5c24', // Rich, luminous casino emerald velvet felt
+      roughness: 0.58,
       metalness: 0.04,
       dithering: true
     });
@@ -1848,9 +1848,9 @@ export class PolyDice {
 
     // Warm Polished Walnut Tray Walls
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 'rgba(48, 29, 18, 1)', // Warm lustrous rich walnut
-      roughness: 0.18,
-      metalness: 0.12,
+      color: '#3d2517', // Warm lustrous rich walnut
+      roughness: 0.20,
+      metalness: 0.10,
       dithering: true
     });
 
@@ -3227,10 +3227,12 @@ export class PolyDice {
 
     // 3. Temporarily adjust exposure for rich, calibrated snapshot colors without blown-out specular highlights
     const prevExposure = renderer.toneMappingExposure;
-    renderer.toneMappingExposure = (options.exposure !== undefined) ? options.exposure : 0.95;
+    renderer.toneMappingExposure = (options.exposure !== undefined) ? options.exposure : 1.28;
 
-    // 4. Temporary snapshot studio backlight and backdrop so transmissive dice refract rich color
+    // 4. Temporary snapshot studio backlight, ambient, and backdrop so transmissive dice refract rich color
     const targetScene = this.scene || this.group;
+    const snapshotAmbient = new this.THREE.AmbientLight(0xffffff, 1.2);
+
     const snapshotKicker = new this.THREE.DirectionalLight(0xfff5e8, 3.8);
     snapshotKicker.position.set(0, this.showcaseTargetPos.y + 1.2, -4.5);
     snapshotKicker.target.position.copy(this.showcaseTargetPos);
@@ -3258,6 +3260,7 @@ export class PolyDice {
     const backPlane = new this.THREE.Mesh(backGeo, backMat);
     backPlane.position.set(this.showcaseTargetPos.x, this.showcaseTargetPos.y, -3.0);
 
+    targetScene.add(snapshotAmbient);
     targetScene.add(snapshotKicker);
     targetScene.add(snapshotKicker.target);
     targetScene.add(snapshotFill);
@@ -3267,6 +3270,7 @@ export class PolyDice {
     renderer.render(targetScene, camera);
 
     // Clean up temporary snapshot studio objects
+    targetScene.remove(snapshotAmbient);
     targetScene.remove(snapshotKicker);
     targetScene.remove(snapshotKicker.target);
     targetScene.remove(snapshotFill);

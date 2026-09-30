@@ -22,27 +22,27 @@ export function createMoodyEnvironment(renderer) {
 
   // Deep Vignette Studio Gradient
   const bgGrad = ctx.createLinearGradient(0, 0, 0, 512);
-  bgGrad.addColorStop(0, '#1c2434');
-  bgGrad.addColorStop(0.35, '#141a26');
-  bgGrad.addColorStop(0.7, '#0d121c');
-  bgGrad.addColorStop(1, '#080b12');
+  bgGrad.addColorStop(0, '#2d3a52');
+  bgGrad.addColorStop(0.35, '#202a3c');
+  bgGrad.addColorStop(0.7, '#161d2a');
+  bgGrad.addColorStop(1, '#0e121a');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, 1024, 512);
 
   // Warm Key Softbox Light
   const warmGlow = ctx.createRadialGradient(512, 110, 5, 512, 110, 280);
-  warmGlow.addColorStop(0, 'rgba(255, 245, 230, 0.65)');
-  warmGlow.addColorStop(0.25, 'rgba(245, 210, 150, 0.45)');
-  warmGlow.addColorStop(0.65, 'rgba(190, 125, 45, 0.18)');
+  warmGlow.addColorStop(0, 'rgba(255, 245, 230, 0.85)');
+  warmGlow.addColorStop(0.25, 'rgba(245, 210, 150, 0.60)');
+  warmGlow.addColorStop(0.65, 'rgba(190, 125, 45, 0.25)');
   warmGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
   ctx.fillStyle = warmGlow;
   ctx.fillRect(0, 0, 1024, 512);
 
   // Cool Rim Softbox Light
   const coolRim = ctx.createRadialGradient(260, 180, 5, 260, 180, 280);
-  coolRim.addColorStop(0, 'rgba(210, 240, 255, 0.55)');
-  coolRim.addColorStop(0.35, 'rgba(130, 190, 255, 0.30)');
-  coolRim.addColorStop(0.75, 'rgba(30, 80, 170, 0.10)');
+  coolRim.addColorStop(0, 'rgba(210, 240, 255, 0.75)');
+  coolRim.addColorStop(0.35, 'rgba(130, 190, 255, 0.45)');
+  coolRim.addColorStop(0.75, 'rgba(30, 80, 170, 0.18)');
   coolRim.addColorStop(1, 'rgba(0, 0, 0, 0)');
   ctx.fillStyle = coolRim;
   ctx.fillRect(0, 0, 1024, 512);
@@ -50,7 +50,7 @@ export function createMoodyEnvironment(renderer) {
   // Overhead Studio Strip Light for Crystal Specular Highlights
   const stripGrad = ctx.createLinearGradient(0, 50, 0, 150);
   stripGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
-  stripGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.40)');
+  stripGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.55)');
   stripGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
   ctx.fillStyle = stripGrad;
   ctx.fillRect(100, 50, 824, 100);
@@ -120,7 +120,7 @@ export function setupDemoViewport(options = {}) {
   renderer.setSize(initialW, initialH, false);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
+  renderer.toneMappingExposure = 1.28;
   if (THREE.SRGBColorSpace) {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
   } else if (THREE.sRGBEncoding) {
@@ -132,11 +132,14 @@ export function setupDemoViewport(options = {}) {
   const moodyEnvMap = createMoodyEnvironment(renderer);
   scene.environment = moodyEnvMap;
 
-  // Key & Rim lights
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+  // Multi-light studio rig: Ambient, Sky/Ground Hemi, Key, Fill & Rim
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
   scene.add(ambientLight);
 
-  const keyLight = new THREE.DirectionalLight(0xfff5ea, 2.2);
+  const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x1a2e22, 0.85);
+  scene.add(hemiLight);
+
+  const keyLight = new THREE.DirectionalLight(0xfffaee, 2.8);
   keyLight.position.set(6, 18, 8);
   keyLight.castShadow = true;
   keyLight.shadow.mapSize.width = 2048;
@@ -153,8 +156,12 @@ export function setupDemoViewport(options = {}) {
   scene.add(keyLight.target);
   keyLight.target.position.set(0, 0, 0);
 
-  const rimLight = new THREE.DirectionalLight(0xaad4ff, 1.6);
-  rimLight.position.set(-6, 8, -6);
+  const fillLight = new THREE.DirectionalLight(0x8ec5fc, 1.4);
+  fillLight.position.set(-8, 12, -6);
+  scene.add(fillLight);
+
+  const rimLight = new THREE.DirectionalLight(0xffeedd, 1.5);
+  rimLight.position.set(0, 8, -12);
   scene.add(rimLight);
 
   let controls = null;
