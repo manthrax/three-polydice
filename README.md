@@ -239,6 +239,25 @@ const dice = new PolyDice({
 - `dice.setBevel(ratio, segments = null)`: Adjusts bevel chamfer size (`0.0` to `0.20`).
 - `dice.selectDie(dieOrId)` / `dice.deselectDie()`: Toggles visual electric-cyan halo outline.
 
+#### Face & Edge Custom Styling (Global & Per-Die)
+- `dice.setFaceStyle(options)`: Sets global face, edge, font, and bevel parameters across all dice.
+- `dice.setDieStyle(dieOrId, options)`: Sets custom style overrides for a specific individual die instance.
+- `dice.clearDieStyle(dieOrId)`: Reverts an individual die back to global style settings.
+- `dice.getFaceStyle(dieOrId = null)`: Resolves active style configuration (for a specific die or global).
+- `dice.setFont(fontFamily, fontWeight = 'bold')`: Convenience helper for changing font typography.
+
+Supported granular styling parameters:
+- `font` / `fontFamily`: CSS font family (e.g. `'Cinzel'`, `'Outfit'`, `'JetBrains Mono'`, `'Impact'`).
+- `fontColor` / `numFillColor`: Hex color for inlaid enamel number paint.
+- `fontEmbossDepth`: Embossing depth in `[-1.0, 1.0]` (`-1.0` = deep inset groove, `+1.0` = outset ridge, `0` = flat).
+- `fontShadowColor` / `numOcclusionColor`: Color for number groove ambient occlusion shadow.
+- `fontShadowRadius`: Number shadow blur radius scale (`0.0` to `2.5`).
+- `faceColor` / `faceFillColor`: Hex color for face facet polygon interior (or `null` for raw material body).
+- `faceOpacity`: Opacity of face interior (`0.0` to `1.0`), integrated into transmission and alpha maps.
+- `edgeColor`: Hex color for polygon perimeter edge outline (or `null`).
+- `edgeEmbossDepth`: Embossing depth in `[-1.0, 1.0]` (`+1.0` = outset raised ridge/bead by default, `-1.0` = inset trench).
+- `bevelColor`: Hex color for procedural chamfer and fillet edge patch (or `null` to match material base color).
+
 #### Mesh & Geometry Generation
 - `dice.createDieMesh(type, options)`: Returns a standalone `THREE.Mesh` with geometry, UVs, normal map, and PBR material.
 - `dice.getFaceCentroids(type)`: Computes ordered centroid vertices for all $N$ faces.

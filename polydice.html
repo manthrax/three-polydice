@@ -218,31 +218,102 @@
 
     <div id="face-style-section" style="margin-top: 5px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-        <span class="section-title" style="margin: 0;">Face & Edge Style</span>
-        <span id="face-style-label" style="font-size: 8.5px; color: var(--accent); font-weight: 600;">Standard</span>
+        <span class="section-title" style="margin: 0;">Style & Edges</span>
+        <span id="face-style-label" style="font-size: 8.5px; color: var(--accent); font-weight: 600;">All Dice</span>
       </div>
       
-      <!-- Font Family Selector -->
+      <!-- Presets Row -->
       <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 4px;">
-        <span style="font-size: 9px; color: var(--text-muted); width: 32px;">Font:</span>
-        <select id="font-family-select" class="small-btn" style="flex: 1; text-align: left; padding: 2px 4px; font-size: 9.5px; background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
-          <option value="" selected>Cinzel (Roman Serif)</option>
-          <option value="Outfit">Outfit (Modern Sans)</option>
-          <option value="JetBrains Mono">JetBrains Mono (Code)</option>
-          <option value="Impact">Impact (Heavy Sans)</option>
-          <option value="Georgia">Georgia (Classic Book)</option>
-        </select>
+        <div class="presets-row" id="edge-preset-row" style="flex: 1; gap: 2px;">
+          <button class="small-btn active" data-edge="none" style="padding: 2px 3px; font-size: 8.5px;" title="Standard clean beveled facet">None</button>
+          <button class="small-btn" data-edge="gold" style="padding: 2px 3px; font-size: 8.5px;" title="Gold filigree edge outline & gold numbers">Gold</button>
+          <button class="small-btn" data-edge="cyber" style="padding: 2px 3px; font-size: 8.5px;" title="Cyber laser cyan outline & dark facet fill">Cyber</button>
+          <button class="small-btn" data-edge="crimson" style="padding: 2px 3px; font-size: 8.5px;" title="Ruby crimson edge outline">Ruby</button>
+          <button class="small-btn" data-edge="white" style="padding: 2px 3px; font-size: 8.5px;" title="White edge outline & porcelain facet">Ivory</button>
+        </div>
       </div>
 
-      <!-- Edge Style Presets -->
-      <div style="display: flex; gap: 4px; align-items: center;">
-        <span style="font-size: 9px; color: var(--text-muted); width: 32px;">Edge:</span>
-        <div class="presets-row" id="edge-preset-row" style="flex: 1; gap: 2px;">
-          <button class="small-btn active" data-edge="none" style="padding: 2px 4px; font-size: 8.5px;" title="Clean beveled facet">None</button>
-          <button class="small-btn" data-edge="gold" style="padding: 2px 4px; font-size: 8.5px;" title="Gold filigree edge outline">Gold</button>
-          <button class="small-btn" data-edge="cyber" style="padding: 2px 4px; font-size: 8.5px;" title="Electric cyan edge outline">Cyan</button>
-          <button class="small-btn" data-edge="crimson" style="padding: 2px 4px; font-size: 8.5px;" title="Crimson edge outline">Ruby</button>
-          <button class="small-btn" data-edge="white" style="padding: 2px 4px; font-size: 8.5px;" title="Pure white edge outline">White</button>
+      <!-- Granular Lower-Level Parameters Accordion / Toggle -->
+      <div id="style-params-toggle-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+        <span style="font-size: 8.5px; color: var(--text-muted); font-weight: 600;">Parameters</span>
+        <button id="toggle-style-params-btn" class="small-btn" style="padding: 1px 4px; font-size: 8px;" title="Expand/collapse granular style parameters">⚙️ Details ▾</button>
+      </div>
+
+      <div id="style-params-container" style="display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 4px;">
+        <!-- Font Selection -->
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Font:</span>
+          <select id="font-family-select" class="small-btn" style="flex: 1; text-align: left; padding: 1px 3px; font-size: 9px; background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+            <option value="" selected>Cinzel (Serif)</option>
+            <option value="Outfit">Outfit (Sans)</option>
+            <option value="JetBrains Mono">JetBrains (Mono)</option>
+            <option value="Impact">Impact (Heavy)</option>
+            <option value="Georgia">Georgia (Book)</option>
+          </select>
+        </div>
+
+        <!-- Font Color -->
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Font Col:</span>
+          <input type="color" id="param-font-color" value="#ffffff" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
+          <button id="param-font-color-auto" class="small-btn" style="padding: 1px 4px; font-size: 8px;" title="Reset font color to material default">Auto</button>
+        </div>
+
+        <!-- Font Emboss Depth (+ / -) -->
+        <div style="display: flex; flex-direction: column; gap: 1px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted);">Font Depth:</span>
+            <span id="param-font-depth-val" style="font-size: 8.5px; color: var(--accent);">-1.0 (Inset)</span>
+          </div>
+          <input type="range" id="param-font-emboss-depth" min="-1.0" max="1.0" step="0.1" value="-1.0" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
+        </div>
+
+        <!-- Font Shadow Color & Radius -->
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Shadow:</span>
+          <input type="color" id="param-font-shadow-color" value="#000000" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
+          <span style="font-size: 8px; color: var(--text-muted); margin-left: auto;">Rad:</span>
+          <input type="range" id="param-font-shadow-radius" min="0.0" max="2.5" step="0.1" value="1.0" style="width: 44px; height: 4px; accent-color: var(--accent); cursor: pointer;">
+          <span id="param-font-shadow-radius-val" style="font-size: 8px; color: var(--accent); width: 16px; text-align: right;">1x</span>
+        </div>
+
+        <!-- Face Color -->
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Face Fill:</span>
+          <input type="color" id="param-face-color" value="#101726" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
+          <button id="param-face-color-none" class="small-btn active" style="padding: 1px 4px; font-size: 8px;" title="Clear face fill color">None</button>
+        </div>
+
+        <!-- Face Opacity Slider -->
+        <div style="display: flex; flex-direction: column; gap: 1px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted);">Face Opacity:</span>
+            <span id="param-face-opacity-val" style="font-size: 8.5px; color: var(--accent);">1.00</span>
+          </div>
+          <input type="range" id="param-face-opacity" min="0.0" max="1.0" step="0.05" value="1.0" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
+        </div>
+
+        <!-- Edge Color -->
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Edge Col:</span>
+          <input type="color" id="param-edge-color" value="#ffd700" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
+          <button id="param-edge-color-none" class="small-btn" style="padding: 1px 4px; font-size: 8px;" title="Clear edge outline">None</button>
+        </div>
+
+        <!-- Edge Emboss Depth (+ / -) -->
+        <div style="display: flex; flex-direction: column; gap: 1px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted);">Edge Depth:</span>
+            <span id="param-edge-depth-val" style="font-size: 8.5px; color: var(--accent);">+1.0 (Outset)</span>
+          </div>
+          <input type="range" id="param-edge-emboss-depth" min="-1.0" max="1.0" step="0.1" value="1.0" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
+        </div>
+
+        <!-- Bevel Color -->
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Bevel Col:</span>
+          <input type="color" id="param-bevel-color" value="#d4af37" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
+          <button id="param-bevel-color-auto" class="small-btn active" style="padding: 1px 4px; font-size: 8px;" title="Use material base color for bevel/fillets">Auto</button>
         </div>
       </div>
     </div>
@@ -1009,11 +1080,14 @@
           inspectorDieMesh = null;
         }
 
-        inspectorDieMesh = diceEngine.createDieMesh(type, {
+        const selectedDie = diceEngine.getSelectedDie();
+        const activeStyle = selectedDie ? (selectedDie.styleOptions || {}) : diceEngine.getFaceStyle();
+
+        inspectorDieMesh = diceEngine.createDieMesh(type, Object.assign({
           bevel: currentBevel,
           bevelSegments: currentBevelSegments,
           material: currentMaterial
-        });
+        }, activeStyle));
 
         // Fit to pedestal scale
         inspectorDieMesh.geometry.computeBoundingSphere();
@@ -1023,11 +1097,11 @@
         scene.add(inspectorDieMesh);
 
         // Update 2D texture preview canvases
-        const previews = diceEngine.getDebugCanvases(type, {
+        const previews = diceEngine.getDebugCanvases(type, Object.assign({
           bevel: currentBevel,
           bevelSegments: currentBevelSegments,
           material: currentMaterial
-        });
+        }, activeStyle));
 
         if (previews) {
           const dCan = document.getElementById('diffuse-canvas');
@@ -1110,6 +1184,133 @@
             labelEl.textContent = `${DICE_MATERIALS[activeMatKey].name} (All Dice)`;
           }
         }
+      }
+
+      function updateFaceStyleUI() {
+        const selectedDie = diceEngine.getSelectedDie();
+        const activeMatKey = selectedDie ? (selectedDie.materialKey || currentMaterial) : currentMaterial;
+        const matDef = DICE_MATERIALS[activeMatKey] || {};
+        const style = diceEngine.getFaceStyle(selectedDie);
+
+        const labelEl = document.getElementById('face-style-label');
+        if (labelEl) {
+          if (selectedDie) {
+            labelEl.innerHTML = `<span style="color:var(--accent); font-weight:700;">Die #${selectedDie.id} (${selectedDie.type}):</span> Custom <a href="#" id="deselect-die-style-link" style="color:var(--text-muted); font-size:8px; margin-left:4px; text-decoration:underline;">(all)</a>`;
+            const deselectLink = document.getElementById('deselect-die-style-link');
+            if (deselectLink) {
+              deselectLink.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                diceEngine.deselectDie();
+              };
+            }
+          } else {
+            labelEl.textContent = 'All Dice';
+          }
+        }
+
+        // Font Family
+        const fontSelect = document.getElementById('font-family-select');
+        if (fontSelect) {
+          fontSelect.value = style.fontFamily || '';
+        }
+
+        // Font Color
+        const fontColorInput = document.getElementById('param-font-color');
+        if (fontColorInput) {
+          const fc = style.fontColor || matDef.numFillColor || '#ffffff';
+          if (fc.startsWith('#') && fc.length === 7) {
+            fontColorInput.value = fc;
+          }
+        }
+
+        // Font Emboss Depth
+        const fontDepthInput = document.getElementById('param-font-emboss-depth');
+        const fontDepthVal = document.getElementById('param-font-depth-val');
+        const fDepth = (style.fontEmbossDepth !== undefined) ? style.fontEmbossDepth : -1.0;
+        if (fontDepthInput) fontDepthInput.value = fDepth;
+        if (fontDepthVal) {
+          fontDepthVal.textContent = fDepth > 0 ? `+${fDepth.toFixed(1)} (Outset)` : fDepth < 0 ? `${fDepth.toFixed(1)} (Inset)` : '0.0 (Flat)';
+        }
+
+        // Font Shadow Color & Radius
+        const fontShadowInput = document.getElementById('param-font-shadow-color');
+        if (fontShadowInput) {
+          const sc = style.fontShadowColor || matDef.numOcclusionColor || '#000000';
+          if (sc.startsWith('#') && sc.length === 7) {
+            fontShadowInput.value = sc;
+          }
+        }
+        const shadowRadiusInput = document.getElementById('param-font-shadow-radius');
+        const shadowRadiusVal = document.getElementById('param-font-shadow-radius-val');
+        const sRad = (style.fontShadowRadius !== undefined) ? style.fontShadowRadius : 1.0;
+        if (shadowRadiusInput) shadowRadiusInput.value = sRad;
+        if (shadowRadiusVal) shadowRadiusVal.textContent = `${sRad.toFixed(1)}x`;
+
+        // Face Color & None Button
+        const faceColorInput = document.getElementById('param-face-color');
+        const faceColorNoneBtn = document.getElementById('param-face-color-none');
+        if (faceColorInput && style.faceFillColor) {
+          if (style.faceFillColor.startsWith('#') && style.faceFillColor.length === 7) {
+            faceColorInput.value = style.faceFillColor;
+          }
+        }
+        if (faceColorNoneBtn) {
+          faceColorNoneBtn.classList.toggle('active', !style.faceFillColor);
+        }
+
+        // Face Opacity
+        const faceOpacityInput = document.getElementById('param-face-opacity');
+        const faceOpacityVal = document.getElementById('param-face-opacity-val');
+        const fOp = (style.faceOpacity !== undefined) ? style.faceOpacity : 1.0;
+        if (faceOpacityInput) faceOpacityInput.value = fOp;
+        if (faceOpacityVal) faceOpacityVal.textContent = fOp.toFixed(2);
+
+        // Edge Color & None Button
+        const edgeColorInput = document.getElementById('param-edge-color');
+        const edgeColorNoneBtn = document.getElementById('param-edge-color-none');
+        if (edgeColorInput && style.edgeColor) {
+          if (style.edgeColor.startsWith('#') && style.edgeColor.length === 7) {
+            edgeColorInput.value = style.edgeColor;
+          }
+        }
+        if (edgeColorNoneBtn) {
+          edgeColorNoneBtn.classList.toggle('active', !style.edgeColor);
+        }
+
+        // Edge Emboss Depth
+        const edgeDepthInput = document.getElementById('param-edge-emboss-depth');
+        const edgeDepthVal = document.getElementById('param-edge-depth-val');
+        const eDepth = (style.edgeEmbossDepth !== undefined) ? style.edgeEmbossDepth : 1.0;
+        if (edgeDepthInput) edgeDepthInput.value = eDepth;
+        if (edgeDepthVal) {
+          edgeDepthVal.textContent = eDepth > 0 ? `+${eDepth.toFixed(1)} (Outset)` : eDepth < 0 ? `${eDepth.toFixed(1)} (Inset)` : '0.0 (Flat)';
+        }
+
+        // Bevel Color & Auto Button
+        const bevelColorInput = document.getElementById('param-bevel-color');
+        const bevelColorAutoBtn = document.getElementById('param-bevel-color-auto');
+        if (bevelColorInput && style.bevelColor) {
+          if (style.bevelColor.startsWith('#') && style.bevelColor.length === 7) {
+            bevelColorInput.value = style.bevelColor;
+          }
+        }
+        if (bevelColorAutoBtn) {
+          bevelColorAutoBtn.classList.toggle('active', !style.bevelColor);
+        }
+      }
+
+      function applyStyleChange(patch) {
+        const selectedDie = diceEngine.getSelectedDie();
+        if (selectedDie) {
+          diceEngine.setDieStyle(selectedDie, patch);
+        } else {
+          diceEngine.setFaceStyle(patch);
+        }
+        if (currentMode === 'inspector' && currentInspectorDie) {
+          setInspectorPolyhedron(currentInspectorDie);
+        }
+        updateFaceStyleUI();
       }
 
       function updatePoolChipsUI() {
@@ -1502,18 +1703,27 @@
         }
       });
 
-      // Listen to Engine Selection and Material events
+      // Listen to Engine Selection, Material, and Style events
       diceEngine.on('selectionChange', () => {
         updateMaterialUI();
+        updateFaceStyleUI();
         updatePoolChipsUI();
       });
       diceEngine.on('dieMaterialChange', () => {
         updateMaterialUI();
+        updateFaceStyleUI();
         updatePoolChipsUI();
       });
       diceEngine.on('materialChange', () => {
         updateMaterialUI();
+        updateFaceStyleUI();
         updatePoolChipsUI();
+      });
+      diceEngine.on('dieStyleChange', () => {
+        updateFaceStyleUI();
+      });
+      diceEngine.on('styleChange', () => {
+        updateFaceStyleUI();
       });
 
       const rollBtn = document.getElementById('roll-btn');
@@ -1664,49 +1874,187 @@
         });
       });
 
+      // Style Parameters Details Toggle
+      const toggleStyleParamsBtn = document.getElementById('toggle-style-params-btn');
+      const styleParamsContainer = document.getElementById('style-params-container');
+      if (toggleStyleParamsBtn && styleParamsContainer) {
+        toggleStyleParamsBtn.addEventListener('click', () => {
+          const isHidden = styleParamsContainer.style.display === 'none';
+          styleParamsContainer.style.display = isHidden ? 'flex' : 'none';
+          toggleStyleParamsBtn.textContent = isHidden ? '⚙️ Details ▾' : '⚙️ Details ▸';
+        });
+      }
+
       // Font Family Selector Listener
       const fontSelect = document.getElementById('font-family-select');
       if (fontSelect) {
         fontSelect.addEventListener('change', () => {
-          const font = fontSelect.value || null;
-          diceEngine.setFont(font);
-          if (currentMode === 'inspector' && currentInspectorDie) {
-            setInspectorPolyhedron(currentInspectorDie);
-          }
+          applyStyleChange({ fontFamily: fontSelect.value || null });
         });
       }
 
-      // Face Edge Styling Preset Listeners
+      // Font Color
+      const paramFontColor = document.getElementById('param-font-color');
+      if (paramFontColor) {
+        paramFontColor.addEventListener('input', (e) => {
+          applyStyleChange({ fontColor: e.target.value });
+        });
+      }
+      const paramFontColorAuto = document.getElementById('param-font-color-auto');
+      if (paramFontColorAuto) {
+        paramFontColorAuto.addEventListener('click', () => {
+          applyStyleChange({ fontColor: null });
+        });
+      }
+
+      // Font Emboss Depth Slider
+      const paramFontDepth = document.getElementById('param-font-emboss-depth');
+      if (paramFontDepth) {
+        paramFontDepth.addEventListener('input', (e) => {
+          applyStyleChange({ fontEmbossDepth: parseFloat(e.target.value) });
+        });
+      }
+
+      // Font Shadow Color & Radius
+      const paramFontShadowColor = document.getElementById('param-font-shadow-color');
+      if (paramFontShadowColor) {
+        paramFontShadowColor.addEventListener('input', (e) => {
+          applyStyleChange({ fontShadowColor: e.target.value });
+        });
+      }
+      const paramFontShadowRadius = document.getElementById('param-font-shadow-radius');
+      if (paramFontShadowRadius) {
+        paramFontShadowRadius.addEventListener('input', (e) => {
+          applyStyleChange({ fontShadowRadius: parseFloat(e.target.value) });
+        });
+      }
+
+      // Face Fill Color & None
+      const paramFaceColor = document.getElementById('param-face-color');
+      if (paramFaceColor) {
+        paramFaceColor.addEventListener('input', (e) => {
+          applyStyleChange({ faceFillColor: e.target.value });
+        });
+      }
+      const paramFaceColorNone = document.getElementById('param-face-color-none');
+      if (paramFaceColorNone) {
+        paramFaceColorNone.addEventListener('click', () => {
+          applyStyleChange({ faceFillColor: null });
+        });
+      }
+
+      // Face Opacity
+      const paramFaceOpacity = document.getElementById('param-face-opacity');
+      if (paramFaceOpacity) {
+        paramFaceOpacity.addEventListener('input', (e) => {
+          applyStyleChange({ faceOpacity: parseFloat(e.target.value) });
+        });
+      }
+
+      // Edge Color & None
+      const paramEdgeColor = document.getElementById('param-edge-color');
+      if (paramEdgeColor) {
+        paramEdgeColor.addEventListener('input', (e) => {
+          applyStyleChange({ edgeColor: e.target.value });
+        });
+      }
+      const paramEdgeColorNone = document.getElementById('param-edge-color-none');
+      if (paramEdgeColorNone) {
+        paramEdgeColorNone.addEventListener('click', () => {
+          applyStyleChange({ edgeColor: null });
+        });
+      }
+
+      // Edge Emboss Depth (+ / -)
+      const paramEdgeDepth = document.getElementById('param-edge-emboss-depth');
+      if (paramEdgeDepth) {
+        paramEdgeDepth.addEventListener('input', (e) => {
+          applyStyleChange({ edgeEmbossDepth: parseFloat(e.target.value) });
+        });
+      }
+
+      // Bevel Color & Auto
+      const paramBevelColor = document.getElementById('param-bevel-color');
+      if (paramBevelColor) {
+        paramBevelColor.addEventListener('input', (e) => {
+          applyStyleChange({ bevelColor: e.target.value });
+        });
+      }
+      const paramBevelColorAuto = document.getElementById('param-bevel-color-auto');
+      if (paramBevelColorAuto) {
+        paramBevelColorAuto.addEventListener('click', () => {
+          applyStyleChange({ bevelColor: null });
+        });
+      }
+
+      // Face & Edge Styling Preset Listeners
       const edgeButtons = document.querySelectorAll('#edge-preset-row button');
       edgeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
           edgeButtons.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           const edgeType = btn.dataset.edge;
-          let edgeColor = null;
-          let faceFillColor = null;
-          let edgeWidth = 0.035;
 
-          if (edgeType === 'gold') {
-            edgeColor = '#ffd700';
-            edgeWidth = 0.038;
+          if (edgeType === 'none') {
+            applyStyleChange({
+              edgeColor: null,
+              edgeEmbossDepth: 0.0,
+              faceFillColor: null,
+              faceOpacity: 1.0,
+              fontColor: null,
+              fontEmbossDepth: -1.0,
+              fontShadowColor: null,
+              fontShadowRadius: 1.0,
+              bevelColor: null
+            });
+          } else if (edgeType === 'gold') {
+            applyStyleChange({
+              edgeColor: '#ffd700',
+              edgeEmbossDepth: 1.0,
+              faceFillColor: null,
+              faceOpacity: 1.0,
+              fontColor: '#ffd700',
+              fontEmbossDepth: -1.0,
+              fontShadowColor: '#251b03',
+              fontShadowRadius: 1.2,
+              bevelColor: '#d4af37'
+            });
           } else if (edgeType === 'cyber') {
-            edgeColor = '#00f7ff';
-            faceFillColor = '#101726';
-            edgeWidth = 0.040;
+            applyStyleChange({
+              edgeColor: '#00f7ff',
+              edgeEmbossDepth: 1.0,
+              faceFillColor: '#101726',
+              faceOpacity: 1.0,
+              fontColor: '#00f7ff',
+              fontEmbossDepth: -1.0,
+              fontShadowColor: '#003844',
+              fontShadowRadius: 1.5,
+              bevelColor: '#00f7ff'
+            });
           } else if (edgeType === 'crimson') {
-            edgeColor = '#ff2a4b';
-            edgeWidth = 0.036;
+            applyStyleChange({
+              edgeColor: '#ff2a4b',
+              edgeEmbossDepth: 1.0,
+              faceFillColor: '#1a0508',
+              faceOpacity: 1.0,
+              fontColor: '#ffffff',
+              fontEmbossDepth: -1.0,
+              fontShadowColor: '#45000c',
+              fontShadowRadius: 1.0,
+              bevelColor: '#ff2a4b'
+            });
           } else if (edgeType === 'white') {
-            edgeColor = '#ffffff';
-            edgeWidth = 0.032;
-          }
-
-          diceEngine.setFaceStyle({ edgeColor, faceFillColor, edgeWidth });
-          const label = document.getElementById('face-style-label');
-          if (label) label.textContent = edgeType === 'none' ? 'Standard' : btn.textContent;
-          if (currentMode === 'inspector' && currentInspectorDie) {
-            setInspectorPolyhedron(currentInspectorDie);
+            applyStyleChange({
+              edgeColor: '#d4af37',
+              edgeEmbossDepth: 1.0,
+              faceFillColor: '#f7f4ea',
+              faceOpacity: 1.0,
+              fontColor: '#2b261d',
+              fontEmbossDepth: -1.0,
+              fontShadowColor: '#c5baa5',
+              fontShadowRadius: 0.8,
+              bevelColor: '#d4af37'
+            });
           }
         });
       });
@@ -2066,6 +2414,7 @@ dice.on('rollComplete', (res) => {
 
         setBevelUI(0.20, 4);
         setDiceMaterialUI('ruby');
+        updateFaceStyleUI();
 
         diceEngine.setDicePool(allTypes, randomMats);
         updatePoolChipsUI();
