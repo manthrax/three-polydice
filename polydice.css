@@ -49,7 +49,7 @@
     }
 
     /* Top Navigation Header (Minimal & Compact) */
-    header {
+    header:not(#server-header):not(.demo-header) {
       position: absolute;
       top: 10px;
       left: 12px;
