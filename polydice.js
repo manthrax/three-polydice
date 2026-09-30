@@ -2863,8 +2863,36 @@ export class PolyDice {
     return [...this.dicePool];
   }
 
-  addDieToPool(type) {
+  addDieToPool(type, material = null, style = null) {
     this.dicePool.push(type);
+    const idx = this.dicePool.length - 1;
+    if (material) {
+      if (!this.poolMaterials) this.poolMaterials = [];
+      this.poolMaterials[idx] = material;
+    }
+    if (style) {
+      if (!this.poolStyles) this.poolStyles = [];
+      this.poolStyles[idx] = Object.assign({}, style);
+    }
+    this.emit('poolChange', [...this.dicePool]);
+  }
+
+  /**
+   * Spawns an individual die directly into the active 3D tray physics simulation and pool.
+   * @param {string} type Die type (e.g. 'd20')
+   * @param {string} material Material key
+   * @param {Object} style Custom face/edge style options
+   * @returns {Object} Active die record
+   */
+  spawnDieIntoTray(type, material = null, style = null) {
+    this.addDieToPool(type, material, style);
+    if (this.physicsWorld && this.group && this.activeDiceInstances.length > 0) {
+      const spawnIndex = this.activeDiceInstances.length;
+      const dieRecord = this._createPhysicsDie(type, spawnIndex, spawnIndex + 1, 0.8, null);
+      this.emit('dieSpawned', { die: dieRecord, index: spawnIndex });
+      return dieRecord;
+    }
+    return null;
   }
 
   removeDieFromPool(index) {

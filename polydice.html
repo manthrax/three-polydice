@@ -243,6 +243,12 @@
         </div>
       </div>
 
+      <!-- Copy / Paste Style Row -->
+      <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 4px;">
+        <button id="copy-style-btn" class="small-btn" style="flex: 1; padding: 2px 4px; font-size: 8.5px; background: rgba(97, 175, 239, 0.12); border-color: rgba(97, 175, 239, 0.35); color: var(--accent);" title="Copy this die's styling & finish (Ctrl+C)">📋 Copy Style</button>
+        <button id="paste-style-btn" class="small-btn" style="flex: 1; padding: 2px 4px; font-size: 8.5px; opacity: 0.5; cursor: not-allowed;" disabled title="Paste copied styling to selected die or tray (Ctrl+V)">📥 Paste Style</button>
+      </div>
+
       <!-- Granular Lower-Level Parameters Accordion / Toggle -->
       <div id="style-params-toggle-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
         <span style="font-size: 8.5px; color: var(--text-muted); font-weight: 600;">Parameters</span>
@@ -826,6 +832,54 @@
       <span id="status-text">Ready to roll</span>
     </div>
 
+    <!-- Floating 3D Die Drag Ghost / Avatar -->
+    <div id="die-drag-ghost" style="display: none;"></div>
+
+    <!-- Toast Notification Overlay -->
+    <div id="polydice-toast" class="polydice-toast"></div>
+
+    <!-- Floating Dice Bag Overlay Widget (Drop Target & Opener) -->
+    <div id="dice-bag-overlay" class="dice-bag-overlay" title="Dice Bag: Drag a die here from the tray, or click to open your collection">
+      <div class="bag-icon-badge-wrap">
+        <span class="bag-emoji">🎒</span>
+        <span id="bag-count-badge" class="bag-count-badge">0</span>
+      </div>
+      <div class="bag-info-wrap">
+        <div class="bag-main-label">Dice Bag</div>
+        <div class="bag-sub-label" id="bag-sub-label">Drag die here</div>
+      </div>
+    </div>
+
+    <!-- Dice Bag Full Modal / Drawer -->
+    <div id="dice-bag-modal">
+      <div class="modal-card dice-bag-card">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">🎒</span>
+            <div>
+              <div class="modal-title" style="margin: 0; font-size: 15px;">Dice Bag Collection</div>
+              <div style="font-size: 10px; color: var(--text-muted);">Saved custom polyhedra &bull; Persists locally in IndexedDB</div>
+            </div>
+          </div>
+          <button class="modal-close-btn" id="close-bag-btn">✕</button>
+        </div>
+
+        <div class="bag-modal-toolbar">
+          <button id="bag-add-selected-btn" class="small-btn" style="padding: 4px 10px; font-size: 10px; background: rgba(97, 175, 239, 0.15); border-color: var(--accent); color: var(--accent); font-weight: 600;" title="Store currently selected or configured die in bag">
+            ➕ Store Current Die in Bag
+          </button>
+          <button id="bag-clear-btn" class="small-btn" style="padding: 4px 10px; font-size: 10px; color: #eb5757; border-color: rgba(235, 87, 87, 0.3);" title="Remove all dice from bag">
+            🗑️ Clear Bag
+          </button>
+        </div>
+
+        <!-- Scrollable Bag Grid -->
+        <div id="dice-bag-grid" class="dice-bag-grid">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+
     <!-- Main Application Script -->
     <script type="module">
       import * as THREE from 'three';
@@ -1130,8 +1184,11 @@
       // 3. UI SYNC & INSPECTOR CONTROLS
       // =========================================================================
 
-      function setInspectorPolyhedron(type) {
-        currentInspectorDie = type;
+      function setInspectorPolyhedron(type = null) {
+        const selectedDie = diceEngine.getSelectedDie();
+        const targetType = type || (selectedDie ? selectedDie.type : currentInspectorDie);
+        currentInspectorDie = targetType;
+
         if (inspectorDieMesh) {
           scene.remove(inspectorDieMesh);
           inspectorDieMesh.geometry.dispose();
@@ -1141,27 +1198,34 @@
           inspectorDieMesh = null;
         }
 
-        const selectedDie = diceEngine.getSelectedDie();
+        const matKey = selectedDie ? (selectedDie.materialKey || currentMaterial) : currentMaterial;
         const activeStyle = selectedDie ? (selectedDie.styleOptions || {}) : diceEngine.getFaceStyle();
+        const activeBevel = (activeStyle.bevel !== undefined) ? activeStyle.bevel : currentBevel;
+        const activeSegments = (activeStyle.bevelSegments !== undefined) ? activeStyle.bevelSegments : currentBevelSegments;
 
-        inspectorDieMesh = diceEngine.createDieMesh(type, Object.assign({
-          bevel: currentBevel,
-          bevelSegments: currentBevelSegments,
-          material: currentMaterial
+        inspectorDieMesh = diceEngine.createDieMesh(targetType, Object.assign({
+          bevel: activeBevel,
+          bevelSegments: activeSegments,
+          material: matKey
         }, activeStyle));
 
-        // Fit to pedestal scale
+        // Fit to pedestal scale gracefully without clipping into pedestal cylinder or ring
         inspectorDieMesh.geometry.computeBoundingSphere();
-        const targetScale = 2.0 / (inspectorDieMesh.geometry.boundingSphere.radius || 1.0);
+        const baseRadius = inspectorDieMesh.geometry.boundingSphere.radius || 1.0;
+        const desiredRadius = 1.05; // Elegant ~2.1 unit diameter atop the 4.8 unit pedestal
+        const targetScale = desiredRadius / baseRadius;
         inspectorDieMesh.geometry.scale(targetScale, targetScale, targetScale);
-        inspectorDieMesh.position.set(0, 2.5, 0);
+
+        // Pedestal surface top is at y = 1.09. Elevate center so the die's lowest rotated point stays well above the pedestal
+        const centerElevation = 1.09 + desiredRadius + 0.35; // ~2.49 units
+        inspectorDieMesh.position.set(0, centerElevation, 0);
         scene.add(inspectorDieMesh);
 
         // Update 2D texture preview canvases
-        const previews = diceEngine.getDebugCanvases(type, Object.assign({
-          bevel: currentBevel,
-          bevelSegments: currentBevelSegments,
-          material: currentMaterial
+        const previews = diceEngine.getDebugCanvases(targetType, Object.assign({
+          bevel: activeBevel,
+          bevelSegments: activeSegments,
+          material: matKey
         }, activeStyle));
 
         if (previews) {
@@ -1211,6 +1275,11 @@
           if (visualTray) visualTray.visible = false;
           inspectorStudioGroup.visible = true;
           if (inspectorDieMesh) inspectorDieMesh.visible = true;
+
+          const selectedDie = diceEngine.getSelectedDie();
+          if (selectedDie) {
+            currentInspectorDie = selectedDie.type;
+          }
 
           document.querySelectorAll('#dice-selector .die-btn').forEach(b => {
             b.classList.toggle('active', b.dataset.type === currentInspectorDie);
@@ -1895,20 +1964,412 @@
       }
 
       // =========================================================================
-      // 5. DOM EVENT ATTACHMENTS
+      // 5. TOAST, PERSISTENCE (INDEXEDDB), STYLE COPY/PASTE & DICE BAG
       // =========================================================================
 
-      // 3D Die Click Selection via Raycasting
-      let canvasPointerDown = { x: 0, y: 0 };
-      renderer.domElement.addEventListener('pointerdown', (e) => {
-        canvasPointerDown.x = e.clientX;
-        canvasPointerDown.y = e.clientY;
-      });
+      // Toast feedback system
+      let toastTimer = null;
+      function showToast(message, duration = 2200) {
+        const toast = document.getElementById('polydice-toast');
+        if (!toast) return;
+        toast.textContent = message;
+        toast.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toast.classList.remove('show');
+        }, duration);
+      }
 
-      renderer.domElement.addEventListener('pointerup', (e) => {
-        const dx = e.clientX - canvasPointerDown.x;
-        const dy = e.clientY - canvasPointerDown.y;
-        if (Math.hypot(dx, dy) < 7 && currentMode === 'tray' && !diceEngine.isRolling()) {
+      // IndexedDB Storage Manager (App state & Dice bag persistence)
+      const StorageManager = {
+        db: null,
+        async init() {
+          return new Promise((resolve) => {
+            if (!window.indexedDB) {
+              resolve(null);
+              return;
+            }
+            const req = indexedDB.open('PolyDiceDB', 1);
+            req.onupgradeneeded = (e) => {
+              const db = e.target.result;
+              if (!db.objectStoreNames.contains('app_state')) {
+                db.createObjectStore('app_state');
+              }
+              if (!db.objectStoreNames.contains('dice_bag')) {
+                db.createObjectStore('dice_bag', { keyPath: 'id' });
+              }
+            };
+            req.onsuccess = (e) => {
+              this.db = e.target.result;
+              resolve(this.db);
+            };
+            req.onerror = () => resolve(null);
+          });
+        },
+        async saveAppState(state) {
+          try {
+            localStorage.setItem('polydice_app_state', JSON.stringify(state));
+          } catch (_) {}
+
+          if (!this.db) return;
+          return new Promise((resolve) => {
+            try {
+              const tx = this.db.transaction('app_state', 'readwrite');
+              const store = tx.objectStore('app_state');
+              store.put(state, 'current_state');
+              tx.oncomplete = () => resolve(true);
+              tx.onerror = () => resolve(false);
+            } catch (_) {
+              resolve(false);
+            }
+          });
+        },
+        async loadAppState() {
+          if (this.db) {
+            try {
+              const state = await new Promise((resolve) => {
+                const tx = this.db.transaction('app_state', 'readonly');
+                const store = tx.objectStore('app_state');
+                const req = store.get('current_state');
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(null);
+              });
+              if (state) return state;
+            } catch (_) {}
+          }
+          try {
+            const raw = localStorage.getItem('polydice_app_state');
+            return raw ? JSON.parse(raw) : null;
+          } catch (_) {
+            return null;
+          }
+        },
+        async getBagDice() {
+          if (this.db) {
+            try {
+              const items = await new Promise((resolve) => {
+                const tx = this.db.transaction('dice_bag', 'readonly');
+                const store = tx.objectStore('dice_bag');
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => resolve([]);
+              });
+              if (items && items.length > 0) return items;
+            } catch (_) {}
+          }
+          try {
+            const raw = localStorage.getItem('polydice_dice_bag');
+            return raw ? JSON.parse(raw) : [];
+          } catch (_) {
+            return [];
+          }
+        },
+        async addDieToBag(item) {
+          if (!item.id) item.id = 'bag_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+          item.createdAt = item.createdAt || Date.now();
+
+          try {
+            const bag = (await this.getBagDice()).filter(x => x.id !== item.id);
+            bag.unshift(item);
+            localStorage.setItem('polydice_dice_bag', JSON.stringify(bag));
+          } catch (_) {}
+
+          if (!this.db) return item;
+          return new Promise((resolve) => {
+            try {
+              const tx = this.db.transaction('dice_bag', 'readwrite');
+              const store = tx.objectStore('dice_bag');
+              store.put(item);
+              tx.oncomplete = () => resolve(item);
+              tx.onerror = () => resolve(item);
+            } catch (_) {
+              resolve(item);
+            }
+          });
+        },
+        async removeDieFromBag(id) {
+          try {
+            const bag = (await this.getBagDice()).filter(x => x.id !== id);
+            localStorage.setItem('polydice_dice_bag', JSON.stringify(bag));
+          } catch (_) {}
+
+          if (!this.db) return;
+          return new Promise((resolve) => {
+            try {
+              const tx = this.db.transaction('dice_bag', 'readwrite');
+              const store = tx.objectStore('dice_bag');
+              store.delete(id);
+              tx.oncomplete = () => resolve(true);
+              tx.onerror = () => resolve(false);
+            } catch (_) {
+              resolve(false);
+            }
+          });
+        },
+        async clearBag() {
+          try {
+            localStorage.removeItem('polydice_dice_bag');
+          } catch (_) {}
+          if (!this.db) return;
+          return new Promise((resolve) => {
+            try {
+              const tx = this.db.transaction('dice_bag', 'readwrite');
+              const store = tx.objectStore('dice_bag');
+              store.clear();
+              tx.oncomplete = () => resolve(true);
+              tx.onerror = () => resolve(false);
+            } catch (_) {
+              resolve(false);
+            }
+          });
+        }
+      };
+
+      function getSerializableAppState() {
+        const pool = diceEngine.getDicePool();
+        const activeDice = diceEngine.getActiveDice();
+        const poolMaterials = pool.map((_, i) => {
+          return (activeDice[i] && activeDice[i].materialKey) || (diceEngine.poolMaterials && diceEngine.poolMaterials[i]) || currentMaterial;
+        });
+        const poolStyles = pool.map((_, i) => {
+          return (activeDice[i] && activeDice[i].styleOptions) || (diceEngine.poolStyles && diceEngine.poolStyles[i]) || {};
+        });
+
+        return {
+          dicePool: pool,
+          poolMaterials,
+          poolStyles,
+          currentMaterial,
+          currentBevel,
+          currentBevelSegments,
+          fastPhysics: diceEngine.isFastPhysics ? diceEngine.isFastPhysics() : false,
+          globalStyle: diceEngine.getFaceStyle()
+        };
+      }
+
+      let autoSaveTimer = null;
+      function scheduleAutoSave(delay = 400) {
+        if (autoSaveTimer) clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(() => {
+          const state = getSerializableAppState();
+          StorageManager.saveAppState(state);
+        }, delay);
+      }
+
+      // Copy & Paste Dice Styling
+      let copiedStyleBuffer = null;
+
+      function copyCurrentDieStyle() {
+        const selectedDie = diceEngine.getSelectedDie();
+        const matKey = selectedDie ? (selectedDie.materialKey || currentMaterial) : currentMaterial;
+        const style = selectedDie ? Object.assign({}, selectedDie.styleOptions) : diceEngine.getFaceStyle();
+        const activeBevel = (style && style.bevel !== undefined) ? style.bevel : currentBevel;
+        const activeSegments = (style && style.bevelSegments !== undefined) ? style.bevelSegments : currentBevelSegments;
+
+        copiedStyleBuffer = {
+          materialKey: matKey,
+          style: Object.assign({}, style, { bevel: activeBevel, bevelSegments: activeSegments })
+        };
+
+        try {
+          localStorage.setItem('polydice_copied_style', JSON.stringify(copiedStyleBuffer));
+        } catch (_) {}
+
+        updatePasteButtonState();
+        const matName = (DICE_MATERIALS[matKey] || {}).name || matKey;
+        const dieName = selectedDie ? `Die #${selectedDie.id} (${selectedDie.type})` : 'Current';
+        showToast(`📋 Copied styling from ${dieName} [${matName}]`);
+      }
+
+      function pasteCurrentDieStyle() {
+        if (!copiedStyleBuffer) {
+          try {
+            const raw = localStorage.getItem('polydice_copied_style');
+            if (raw) copiedStyleBuffer = JSON.parse(raw);
+          } catch (_) {}
+        }
+        if (!copiedStyleBuffer) {
+          showToast('⚠️ No style copied yet!');
+          return;
+        }
+
+        const selectedDie = diceEngine.getSelectedDie();
+        if (selectedDie) {
+          diceEngine.setDieMaterial(selectedDie, copiedStyleBuffer.materialKey);
+          diceEngine.setDieStyle(selectedDie, copiedStyleBuffer.style);
+          showToast(`📥 Applied style to Die #${selectedDie.id} (${selectedDie.type})!`);
+        } else {
+          setDiceMaterialUI(copiedStyleBuffer.materialKey);
+          applyStyleChange(copiedStyleBuffer.style);
+          if (copiedStyleBuffer.style.bevel !== undefined) {
+            setBevelUI(copiedStyleBuffer.style.bevel, copiedStyleBuffer.style.bevelSegments);
+          }
+          showToast(`📥 Applied copied style to all dice!`);
+        }
+
+        updateMaterialUI();
+        updateFaceStyleUI();
+        updatePoolChipsUI();
+        scheduleAutoSave();
+      }
+
+      function updatePasteButtonState() {
+        const pasteBtn = document.getElementById('paste-style-btn');
+        if (!pasteBtn) return;
+        if (!copiedStyleBuffer) {
+          try {
+            const raw = localStorage.getItem('polydice_copied_style');
+            if (raw) copiedStyleBuffer = JSON.parse(raw);
+          } catch (_) {}
+        }
+        if (copiedStyleBuffer) {
+          pasteBtn.removeAttribute('disabled');
+          pasteBtn.style.opacity = '1.0';
+          pasteBtn.style.cursor = 'pointer';
+          const matName = (DICE_MATERIALS[copiedStyleBuffer.materialKey] || {}).name || copiedStyleBuffer.materialKey;
+          pasteBtn.title = `Paste copied style (${matName}) (Ctrl+V)`;
+        } else {
+          pasteBtn.setAttribute('disabled', 'true');
+          pasteBtn.style.opacity = '0.5';
+          pasteBtn.style.cursor = 'not-allowed';
+        }
+      }
+
+      // Dice Bag UI & Actions
+      function openDiceBagModal() {
+        const modal = document.getElementById('dice-bag-modal');
+        if (modal) {
+          modal.classList.add('open');
+          renderDiceBagGrid();
+        }
+      }
+
+      function closeDiceBagModal() {
+        const modal = document.getElementById('dice-bag-modal');
+        if (modal) modal.classList.remove('open');
+      }
+
+      async function updateDiceBagBadge() {
+        const bag = await StorageManager.getBagDice();
+        const badge = document.getElementById('bag-count-badge');
+        if (badge) badge.textContent = bag.length;
+      }
+
+      async function addDieToBagFromInstance(dieOrConfig) {
+        const selectedDie = dieOrConfig || diceEngine.getSelectedDie();
+        const type = selectedDie ? selectedDie.type : currentInspectorDie || 'd20';
+        const matKey = selectedDie ? (selectedDie.materialKey || currentMaterial) : currentMaterial;
+        const style = selectedDie ? Object.assign({}, selectedDie.styleOptions) : diceEngine.getFaceStyle();
+        const bevel = (style && style.bevel !== undefined) ? style.bevel : currentBevel;
+        const bevelSegments = (style && style.bevelSegments !== undefined) ? style.bevelSegments : currentBevelSegments;
+
+        const item = {
+          id: 'die_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          type,
+          materialKey: matKey,
+          styleOptions: Object.assign({}, style, { bevel, bevelSegments }),
+          name: `${type.toUpperCase()} • ${(DICE_MATERIALS[matKey] || {}).name || matKey}`,
+          createdAt: Date.now()
+        };
+
+        await StorageManager.addDieToBag(item);
+        await updateDiceBagBadge();
+        showToast(`🎒 Saved ${item.name} into Dice Bag!`);
+
+        const bagWidget = document.getElementById('dice-bag-overlay');
+        if (bagWidget) {
+          bagWidget.classList.add('drag-hover');
+          setTimeout(() => bagWidget.classList.remove('drag-hover'), 350);
+        }
+
+        if (document.getElementById('dice-bag-modal')?.classList.contains('open')) {
+          renderDiceBagGrid();
+        }
+      }
+
+      async function renderDiceBagGrid() {
+        const grid = document.getElementById('dice-bag-grid');
+        if (!grid) return;
+        const bag = await StorageManager.getBagDice();
+        updateDiceBagBadge();
+
+        if (bag.length === 0) {
+          grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 36px 12px; color: var(--text-muted); font-size: 11px;">
+              <div style="font-size: 32px; margin-bottom: 8px;">🎒</div>
+              <div style="font-weight: 600; color: #fff; margin-bottom: 4px;">Your Dice Bag is Empty</div>
+              <div>Drag any 3D die from the tray over the bag widget,<br>or click <b>"+ Store Current Die"</b> above to save your custom creations.</div>
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = '';
+        bag.forEach((item) => {
+          const card = document.createElement('div');
+          card.className = 'bag-die-card';
+          card.title = `Click to spawn ${item.name} into the tray`;
+
+          const matDef = DICE_MATERIALS[item.materialKey] || {};
+          const swatchColor = matDef.baseColor || '#d4af37';
+          const faceColor = (item.styleOptions && item.styleOptions.faceFillColor) || swatchColor;
+          const edgeColor = (item.styleOptions && item.styleOptions.edgeColor) || '#ffd700';
+
+          card.innerHTML = `
+            <button class="bag-die-delete-btn" title="Remove die from bag">&times;</button>
+            <div class="bag-die-preview-wrap" style="background: radial-gradient(circle, ${faceColor} 20%, #0d1117 90%); border-color: ${edgeColor};">
+              <span style="font-size: 16px; font-weight: 800; color: ${item.styleOptions?.fontColor || '#fff'};">${item.type}</span>
+            </div>
+            <div class="bag-die-info">
+              <span class="bag-die-type">${item.type.toUpperCase()}</span>
+              <span class="bag-die-mat">${matDef.name || item.materialKey}</span>
+            </div>
+          `;
+
+          // Click on card body spawns copy into tray
+          card.addEventListener('click', (e) => {
+            if (e.target.classList.contains('bag-die-delete-btn')) return;
+            spawnDieFromBag(item);
+          });
+
+          // Delete button
+          card.querySelector('.bag-die-delete-btn').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await StorageManager.removeDieFromBag(item.id);
+            renderDiceBagGrid();
+            showToast(`🗑️ Removed ${item.name} from Bag`);
+          });
+
+          grid.appendChild(card);
+        });
+      }
+
+      function spawnDieFromBag(item) {
+        diceEngine.spawnDieIntoTray(item.type, item.materialKey, item.styleOptions);
+        updatePoolChipsUI();
+        updateMaterialUI();
+        updateFaceStyleUI();
+        scheduleAutoSave();
+        showToast(`✨ Spawned ${item.name} into Tray!`);
+      }
+
+      // =========================================================================
+      // 3D DIE DRAG TO BAG & SELECTION VIA RAYCASTING
+      // =========================================================================
+
+      let pointerDownDie = null;
+      let pointerDownPos = { x: 0, y: 0 };
+      let isDraggingDie = false;
+      const bagOverlay = document.getElementById('dice-bag-overlay');
+      const dragGhost = document.getElementById('die-drag-ghost');
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        pointerDownPos.x = e.clientX;
+        pointerDownPos.y = e.clientY;
+        pointerDownDie = null;
+        isDraggingDie = false;
+
+        if (currentMode === 'tray' && !diceEngine.isRolling()) {
           const rect = renderer.domElement.getBoundingClientRect();
           const mouse = new THREE.Vector2(
             ((e.clientX - rect.left) / rect.width) * 2 - 1,
@@ -1919,21 +2380,81 @@
 
           const activeMeshes = diceEngine.getActiveDice().map(d => d.mesh);
           const hits = raycaster.intersectObjects(activeMeshes, false);
-
           if (hits.length > 0) {
-            const hitMesh = hits[0].object;
-            const clickedDie = diceEngine.getActiveDice().find(d => d.mesh === hitMesh);
-            if (clickedDie) {
-              if (diceEngine.getSelectedDie() === clickedDie) {
-                diceEngine.deselectDie();
-              } else {
-                diceEngine.selectDie(clickedDie);
-              }
-            }
-          } else {
-            diceEngine.deselectDie();
+            pointerDownDie = diceEngine.getActiveDice().find(d => d.mesh === hits[0].object) || null;
           }
         }
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!pointerDownDie) return;
+        const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+
+        if (!isDraggingDie && dist > 10) {
+          isDraggingDie = true;
+          if (controls) controls.enabled = false;
+          if (bagOverlay) {
+            bagOverlay.classList.add('drag-active');
+            const sub = document.getElementById('bag-sub-label');
+            if (sub) sub.textContent = 'Drop to save!';
+          }
+          if (dragGhost) {
+            const matName = (DICE_MATERIALS[pointerDownDie.materialKey] || {}).name || pointerDownDie.materialKey || '';
+            dragGhost.innerHTML = `<span>🎲</span> <span>${pointerDownDie.type.toUpperCase()} (${matName})</span>`;
+            dragGhost.style.display = 'flex';
+          }
+        }
+
+        if (isDraggingDie) {
+          if (dragGhost) {
+            dragGhost.style.left = e.clientX + 'px';
+            dragGhost.style.top = e.clientY + 'px';
+          }
+
+          if (bagOverlay) {
+            const rect = bagOverlay.getBoundingClientRect();
+            const isOver = e.clientX >= rect.left && e.clientX <= rect.right &&
+                           e.clientY >= rect.top && e.clientY <= rect.bottom;
+            bagOverlay.classList.toggle('drag-hover', isOver);
+            const sub = document.getElementById('bag-sub-label');
+            if (sub) sub.textContent = isOver ? '📥 Release to Store!' : 'Drop to save!';
+          }
+        }
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (isDraggingDie && pointerDownDie) {
+          if (bagOverlay) {
+            const rect = bagOverlay.getBoundingClientRect();
+            const isOver = e.clientX >= rect.left && e.clientX <= rect.right &&
+                           e.clientY >= rect.top && e.clientY <= rect.bottom;
+            if (isOver) {
+              addDieToBagFromInstance(pointerDownDie);
+            }
+          }
+        } else if (pointerDownDie && !isDraggingDie) {
+          // Normal click selection
+          if (diceEngine.getSelectedDie() === pointerDownDie) {
+            diceEngine.deselectDie();
+          } else {
+            diceEngine.selectDie(pointerDownDie);
+          }
+        } else if (!pointerDownDie && Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y) < 7 && currentMode === 'tray') {
+          // Click on empty space
+          diceEngine.deselectDie();
+        }
+
+        if (isDraggingDie) {
+          if (controls) controls.enabled = true;
+          if (dragGhost) dragGhost.style.display = 'none';
+          if (bagOverlay) {
+            bagOverlay.classList.remove('drag-active', 'drag-hover');
+            const sub = document.getElementById('bag-sub-label');
+            if (sub) sub.textContent = 'Drag die here';
+          }
+        }
+        pointerDownDie = null;
+        isDraggingDie = false;
       });
 
       // Listen to Engine Selection, Material, and Style events
@@ -1948,17 +2469,27 @@
         updateMaterialUI();
         updateFaceStyleUI();
         updatePoolChipsUI();
+        scheduleAutoSave();
       });
       diceEngine.on('materialChange', () => {
         updateMaterialUI();
         updateFaceStyleUI();
         updatePoolChipsUI();
+        scheduleAutoSave();
       });
       diceEngine.on('dieStyleChange', () => {
         updateFaceStyleUI();
+        scheduleAutoSave();
       });
       diceEngine.on('styleChange', () => {
         updateFaceStyleUI();
+        scheduleAutoSave();
+      });
+      diceEngine.on('poolChange', () => {
+        scheduleAutoSave();
+      });
+      diceEngine.on('bevelChange', () => {
+        scheduleAutoSave();
       });
 
       const rollBtn = document.getElementById('roll-btn');
@@ -2203,6 +2734,55 @@
           const isHidden = styleParamsContainer.style.display === 'none';
           styleParamsContainer.style.display = isHidden ? 'flex' : 'none';
           toggleStyleParamsBtn.textContent = isHidden ? '⚙️ Details ▾' : '⚙️ Details ▸';
+        });
+      }
+
+      // Copy & Paste Style Buttons
+      const copyStyleBtn = document.getElementById('copy-style-btn');
+      if (copyStyleBtn) {
+        copyStyleBtn.addEventListener('click', () => {
+          copyCurrentDieStyle();
+        });
+      }
+
+      const pasteStyleBtn = document.getElementById('paste-style-btn');
+      if (pasteStyleBtn) {
+        pasteStyleBtn.addEventListener('click', () => {
+          pasteCurrentDieStyle();
+        });
+      }
+
+      // Dice Bag Modal Controls
+      const diceBagOverlay = document.getElementById('dice-bag-overlay');
+      if (diceBagOverlay) {
+        diceBagOverlay.addEventListener('click', () => {
+          openDiceBagModal();
+        });
+      }
+
+      const closeBagBtn = document.getElementById('close-bag-btn');
+      if (closeBagBtn) {
+        closeBagBtn.addEventListener('click', () => {
+          closeDiceBagModal();
+        });
+      }
+
+      const bagAddSelectedBtn = document.getElementById('bag-add-selected-btn');
+      if (bagAddSelectedBtn) {
+        bagAddSelectedBtn.addEventListener('click', () => {
+          addDieToBagFromInstance();
+        });
+      }
+
+      const bagClearBtn = document.getElementById('bag-clear-btn');
+      if (bagClearBtn) {
+        bagClearBtn.addEventListener('click', async () => {
+          if (confirm('Clear all dice from your bag?')) {
+            await StorageManager.clearBag();
+            renderDiceBagGrid();
+            updateDiceBagBadge();
+            showToast('🗑️ Cleared Dice Bag');
+          }
         });
       }
 
@@ -2736,7 +3316,21 @@ dice.on('rollComplete', (res) => {
         if (e.key === 'Escape') {
           closeSnapshot();
           closeConfig();
+          closeDiceBagModal();
           if (docsModal) docsModal.classList.remove('open');
+        }
+
+        const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+        if (isInput) return;
+
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+          if (diceEngine.getSelectedDie()) {
+            e.preventDefault();
+            copyCurrentDieStyle();
+          }
+        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+          e.preventDefault();
+          pasteCurrentDieStyle();
         }
       });
 
@@ -2858,16 +3452,41 @@ dice.on('rollComplete', (res) => {
       // =========================================================================
 
       async function init() {
-        // Start with all 14 dice types and randomized distinct materials from the palette
-        const allTypes = ['d4', 'd6', 'd8', 'd10', 'd12', 'd14', 'd16', 'd20', 'd24', 'd30', 'd48', 'd60', 'd100', 'd120'];
-        const mats = ['ruby', 'emerald', 'sapphire', 'pearl', 'gold', 'silver', 'obsidian'];
-        const randomMats = allTypes.map(() => mats[Math.floor(Math.random() * mats.length)]);
+        // Initialize IndexedDB StorageManager & Bag UI
+        await StorageManager.init();
+        await updateDiceBagBadge();
+        updatePasteButtonState();
 
-        setBevelUI(0.20, 4);
-        setDiceMaterialUI('ruby');
+        const savedState = await StorageManager.loadAppState();
+
+        let allTypes, randomMats, poolStyles = null;
+        if (savedState && Array.isArray(savedState.dicePool) && savedState.dicePool.length > 0) {
+          allTypes = savedState.dicePool;
+          currentMaterial = savedState.currentMaterial || 'ruby';
+          randomMats = savedState.poolMaterials || allTypes.map(() => currentMaterial);
+          poolStyles = savedState.poolStyles || null;
+          currentBevel = savedState.currentBevel !== undefined ? savedState.currentBevel : 0.20;
+          currentBevelSegments = savedState.currentBevelSegments !== undefined ? savedState.currentBevelSegments : 4;
+          if (savedState.globalStyle) {
+            diceEngine.setFaceStyle(savedState.globalStyle);
+          }
+          if (savedState.fastPhysics !== undefined) {
+            setPhysicsHullUI(savedState.fastPhysics);
+          }
+        } else {
+          allTypes = ['d4', 'd6', 'd8', 'd10', 'd12', 'd14', 'd16', 'd20', 'd24', 'd30', 'd48', 'd60', 'd100', 'd120'];
+          const mats = ['ruby', 'emerald', 'sapphire', 'pearl', 'gold', 'silver', 'obsidian'];
+          randomMats = allTypes.map(() => mats[Math.floor(Math.random() * mats.length)]);
+        }
+
+        setBevelUI(currentBevel, currentBevelSegments);
+        setDiceMaterialUI(currentMaterial);
         updateFaceStyleUI();
 
         diceEngine.setDicePool(allTypes, randomMats);
+        if (poolStyles) {
+          diceEngine.poolStyles = poolStyles;
+        }
         updatePoolChipsUI();
 
         await diceEngine.init();
@@ -2877,7 +3496,7 @@ dice.on('rollComplete', (res) => {
         switchMode('tray');
         animate();
 
-        // Start the app with an immediate roll of all 14 dice in the tray
+        // Start the app with an immediate roll of all dice in the tray
         diceEngine.roll({ power: 1.0 });
       }
 
