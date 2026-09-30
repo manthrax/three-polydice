@@ -129,6 +129,16 @@
         <button class="tab-btn active" data-bevel="0.20"
           style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;">Round</button>
       </div>
+      <!-- Continuous Bevel Radius Slider -->
+      <div style="display: flex; flex-direction: column; gap: 1px; margin-bottom: 3px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 8.5px; color: var(--text-muted);">Radius:</span>
+          <span id="bevel-radius-val" style="font-size: 8.5px; color: var(--accent);">0.20</span>
+        </div>
+        <input type="range" id="bevel-radius-slider" min="0.00" max="0.35" step="0.01" value="0.20"
+          style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;"
+          title="Adjust bevel chamfer / fillet radius smoothly">
+      </div>
       <div id="bevel-segments-row"
         style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
         <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Segments</span>
@@ -314,6 +324,57 @@
           <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Bevel Col:</span>
           <input type="color" id="param-bevel-color" value="#d4af37" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
           <button id="param-bevel-color-auto" class="small-btn active" style="padding: 1px 4px; font-size: 8px;" title="Use material base color for bevel/fillets">Auto</button>
+        </div>
+
+        <!-- Divider: PBR & Pearlescent Material -->
+        <div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 3px 0 2px 0;"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 8.5px; color: var(--accent-gold); font-weight: 700;">Material & Pearl Finish</span>
+          <button id="param-pbr-auto" class="small-btn" style="padding: 1px 4px; font-size: 8px;" title="Reset PBR & Pearl to material defaults">Reset</button>
+        </div>
+
+        <!-- Roughness Slider -->
+        <div style="display: flex; flex-direction: column; gap: 1px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted);">Roughness:</span>
+            <span id="param-roughness-val" style="font-size: 8.5px; color: var(--accent);">Auto</span>
+          </div>
+          <input type="range" id="param-roughness" min="0.00" max="1.00" step="0.02" value="0.16" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
+        </div>
+
+        <!-- Metalness Slider -->
+        <div style="display: flex; flex-direction: column; gap: 1px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted);">Metalness:</span>
+            <span id="param-metalness-val" style="font-size: 8.5px; color: var(--accent);">Auto</span>
+          </div>
+          <input type="range" id="param-metalness" min="0.00" max="1.00" step="0.02" value="0.04" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
+        </div>
+
+        <!-- Iridescence Slider -->
+        <div style="display: flex; flex-direction: column; gap: 1px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted);">Iridescence (Pearl):</span>
+            <span id="param-iridescence-val" style="font-size: 8.5px; color: var(--accent);">Auto</span>
+          </div>
+          <input type="range" id="param-iridescence" min="0.00" max="1.00" step="0.05" value="0.80" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
+        </div>
+
+        <!-- Iridescence IOR Slider -->
+        <div style="display: flex; flex-direction: column; gap: 1px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted);">Iridescence IOR:</span>
+            <span id="param-iridescence-ior-val" style="font-size: 8.5px; color: var(--accent);">1.60</span>
+          </div>
+          <input type="range" id="param-iridescence-ior" min="1.00" max="2.40" step="0.05" value="1.60" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
+        </div>
+
+        <!-- Sheen Slider & Sheen Color -->
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Sheen:</span>
+          <input type="range" id="param-sheen" min="0.00" max="1.00" step="0.05" value="0.60" style="flex: 1; height: 4px; accent-color: var(--accent); cursor: pointer;">
+          <span id="param-sheen-val" style="font-size: 8px; color: var(--accent); width: 22px; text-align: right;">0.60</span>
+          <input type="color" id="param-sheen-color" value="#ffb3d9" style="width: 18px; height: 16px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;" title="Sheen Color Tint">
         </div>
       </div>
     </div>
@@ -1298,6 +1359,74 @@
         if (bevelColorAutoBtn) {
           bevelColorAutoBtn.classList.toggle('active', !style.bevelColor);
         }
+
+        // Roughness
+        const roughnessInput = document.getElementById('param-roughness');
+        const roughnessVal = document.getElementById('param-roughness-val');
+        const activeRoughness = (style.roughness !== undefined && style.roughness !== null) ? style.roughness : (matDef.roughness !== undefined ? matDef.roughness : 0.16);
+        if (roughnessInput) roughnessInput.value = activeRoughness;
+        if (roughnessVal) roughnessVal.textContent = (style.roughness != null) ? activeRoughness.toFixed(2) : `${activeRoughness.toFixed(2)} (auto)`;
+
+        // Metalness
+        const metalnessInput = document.getElementById('param-metalness');
+        const metalnessVal = document.getElementById('param-metalness-val');
+        const activeMetalness = (style.metalness !== undefined && style.metalness !== null) ? style.metalness : (matDef.metalness !== undefined ? matDef.metalness : 0.04);
+        if (metalnessInput) metalnessInput.value = activeMetalness;
+        if (metalnessVal) metalnessVal.textContent = (style.metalness != null) ? activeMetalness.toFixed(2) : `${activeMetalness.toFixed(2)} (auto)`;
+
+        // Iridescence
+        const iridescenceInput = document.getElementById('param-iridescence');
+        const iridescenceVal = document.getElementById('param-iridescence-val');
+        const activeIridescence = (style.iridescence !== undefined && style.iridescence !== null) ? style.iridescence : (matDef.iridescence || 0.0);
+        if (iridescenceInput) iridescenceInput.value = activeIridescence;
+        if (iridescenceVal) iridescenceVal.textContent = (style.iridescence != null) ? activeIridescence.toFixed(2) : (activeIridescence > 0 ? `${activeIridescence.toFixed(2)} (auto)` : 'Off');
+
+        // Iridescence IOR
+        const iridescenceIorInput = document.getElementById('param-iridescence-ior');
+        const iridescenceIorVal = document.getElementById('param-iridescence-ior-val');
+        const activeIor = (style.iridescenceIOR !== undefined && style.iridescenceIOR !== null) ? style.iridescenceIOR : (matDef.iridescenceIOR || 1.60);
+        if (iridescenceIorInput) iridescenceIorInput.value = activeIor;
+        if (iridescenceIorVal) iridescenceIorVal.textContent = activeIor.toFixed(2);
+
+        // Sheen & Sheen Color
+        const sheenInput = document.getElementById('param-sheen');
+        const sheenVal = document.getElementById('param-sheen-val');
+        const sheenColorInput = document.getElementById('param-sheen-color');
+        const activeSheen = (style.sheen !== undefined && style.sheen !== null) ? style.sheen : (matDef.sheen || 0.0);
+        if (sheenInput) sheenInput.value = activeSheen;
+        if (sheenVal) sheenVal.textContent = activeSheen.toFixed(2);
+        if (sheenColorInput) {
+          const sc = style.sheenColor || matDef.sheenColor || '#ffb3d9';
+          if (sc.startsWith('#') && sc.length === 7) sheenColorInput.value = sc;
+        }
+
+        // Sync Bevel Radius slider & switch
+        const activeBevelRatio = (style.bevel !== undefined && style.bevel !== null) ? style.bevel : currentBevel;
+        const bevelSlider = document.getElementById('bevel-radius-slider');
+        const bevelVal = document.getElementById('bevel-radius-val');
+        if (bevelSlider) bevelSlider.value = activeBevelRatio;
+        if (bevelVal) bevelVal.textContent = activeBevelRatio.toFixed(2);
+
+        document.querySelectorAll('#bevel-switch .tab-btn').forEach(btn => {
+          const val = parseFloat(btn.dataset.bevel);
+          btn.classList.toggle('active', Math.abs(val - activeBevelRatio) < 0.01);
+        });
+
+        const activeSegments = (style.bevelSegments !== undefined && style.bevelSegments !== null) ? style.bevelSegments : currentBevelSegments;
+        document.querySelectorAll('#bevel-segments-switch .tab-btn').forEach(btn => {
+          const val = parseInt(btn.dataset.seg, 10);
+          btn.classList.toggle('active', val === activeSegments);
+        });
+
+        const segRow = document.getElementById('bevel-segments-row');
+        const segLabel = document.getElementById('bevel-seg-label');
+        if (activeBevelRatio === 0.0) {
+          if (segRow) segRow.style.opacity = '0.35';
+          if (segLabel) segLabel.textContent = 'Sharp (0 seg)';
+        } else {
+          if (segRow) segRow.style.opacity = '1.0';
+          if (segLabel) segLabel.textContent = `${activeSegments} seg`;
+        }
       }
 
       function applyStyleChange(patch) {
@@ -1361,8 +1490,14 @@
 
           chip.querySelector('.chip-remove').onclick = (e) => {
             e.stopPropagation();
-            diceEngine.removeDieFromPool(idx);
+            if (correspondingDie) {
+              diceEngine.removeDie(correspondingDie);
+            } else {
+              diceEngine.removeDieFromPool(idx);
+            }
             updatePoolChipsUI();
+            updateMaterialUI();
+            updateFaceStyleUI();
           };
           container.appendChild(chip);
         });
@@ -1377,12 +1512,23 @@
       function setBevelUI(bevel, segments = null) {
         currentBevel = bevel;
         if (segments != null) currentBevelSegments = segments;
-        diceEngine.setBevel(bevel, currentBevelSegments);
+        
+        const selectedDie = diceEngine.getSelectedDie();
+        if (selectedDie) {
+          diceEngine.setDieStyle(selectedDie, { bevel: currentBevel, bevelSegments: currentBevelSegments });
+        } else {
+          diceEngine.setBevel(bevel, currentBevelSegments);
+        }
 
         document.querySelectorAll('#bevel-switch .tab-btn').forEach(btn => {
           const val = parseFloat(btn.dataset.bevel);
           btn.classList.toggle('active', Math.abs(val - currentBevel) < 0.01);
         });
+
+        const bevelSlider = document.getElementById('bevel-radius-slider');
+        const bevelVal = document.getElementById('bevel-radius-val');
+        if (bevelSlider) bevelSlider.value = currentBevel;
+        if (bevelVal) bevelVal.textContent = currentBevel.toFixed(2);
 
         const segRow = document.getElementById('bevel-segments-row');
         const segLabel = document.getElementById('bevel-seg-label');
@@ -1732,11 +1878,23 @@
       window.addEventListener('pointercancel', releaseCharge);
 
       window.addEventListener('keydown', (e) => {
+        const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
         if (e.code === 'Space' && !isCharging && !diceEngine.isRolling() && currentMode === 'tray') {
-          const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-          if (tag !== 'input' && tag !== 'textarea') {
+          e.preventDefault();
+          startCharge();
+          return;
+        }
+
+        if ((e.key === 'Delete' || e.key === 'Backspace') && currentMode === 'tray' && !diceEngine.isRolling()) {
+          const selectedDie = diceEngine.getSelectedDie();
+          if (selectedDie) {
             e.preventDefault();
-            startCharge();
+            diceEngine.removeDie(selectedDie);
+            updatePoolChipsUI();
+            updateMaterialUI();
+            updateFaceStyleUI();
           }
         }
       });
@@ -1836,17 +1994,87 @@
       });
 
       // Theming & Material Shuffle Button
+      function getRandomItem(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+      }
+
+      function generateShuffledDieConfig() {
+        const allMats = ['ruby', 'emerald', 'sapphire', 'pearl', 'gold', 'silver', 'obsidian', 'cyber', 'paladin'];
+        const fonts = [null, 'Cinzel', 'Outfit', 'JetBrains Mono', 'Impact', 'Georgia'];
+        const fontDepths = [-1.0, -0.6, 0.0, 0.7, 1.0];
+        const edgeDepths = [1.0, 0.0, -1.0];
+
+        const themes = [
+          // Gilded Ebony
+          { face: '#14120f', edge: '#ffd700', font: '#ffd700', bevel: '#d4af37', shadow: '#3a2705' },
+          // Laser Cyber
+          { face: '#080d1a', edge: '#00f7ff', font: '#ffffff', bevel: '#00f7ff', shadow: '#003a45' },
+          // Crimson Jeweler
+          { face: '#1a0307', edge: '#ff2a4b', font: '#ffeaee', bevel: '#ff2a4b', shadow: '#45000c' },
+          // Paladin Porcelain Ivory
+          { face: '#f8f5eb', edge: '#c59b27', font: '#1c160e', bevel: '#2b2318', shadow: '#baa888' },
+          // Emerald Jade
+          { face: '#051f14', edge: '#2ee695', font: '#e6fff3', bevel: '#2ee695', shadow: '#03301a' },
+          // Celestial Sapphire
+          { face: '#06132b', edge: '#4fa3ff', font: '#f0f6ff', bevel: '#4fa3ff', shadow: '#0a224a' },
+          // Rose Quartz Nacre
+          { face: '#fdf3f7', edge: '#e08ba7', font: '#3b1824', bevel: '#eed5df', shadow: '#baa3ac' },
+          // Raw Material Finish (No Face Fill)
+          { face: null, edge: '#ffd700', font: null, bevel: null, shadow: null },
+          { face: null, edge: null, font: null, bevel: null, shadow: null }
+        ];
+
+        const theme = getRandomItem(themes);
+        const mat = getRandomItem(allMats);
+        const bevelRatio = Math.round((Math.random() * 0.28) * 100) / 100;
+        const bevelSegs = getRandomItem([1, 2, 3, 4]);
+
+        const hasCustomPbr = Math.random() > 0.45;
+        const isPearlescent = mat === 'pearl' || Math.random() > 0.65;
+
+        return {
+          material: mat,
+          style: {
+            fontFamily: getRandomItem(fonts),
+            fontColor: theme.font,
+            fontEmbossDepth: getRandomItem(fontDepths),
+            fontShadowColor: theme.shadow,
+            fontShadowRadius: Math.round((0.6 + Math.random() * 1.4) * 10) / 10,
+            faceFillColor: theme.face,
+            faceOpacity: theme.face ? (Math.random() > 0.3 ? 1.0 : Math.round((0.5 + Math.random() * 0.45) * 100) / 100) : 1.0,
+            edgeColor: theme.edge,
+            edgeEmbossDepth: getRandomItem(edgeDepths),
+            bevelColor: theme.bevel,
+            bevel: bevelRatio,
+            bevelSegments: bevelSegs,
+            roughness: hasCustomPbr ? Math.round((0.02 + Math.random() * 0.50) * 100) / 100 : null,
+            metalness: hasCustomPbr ? (Math.random() > 0.5 ? Math.round(Math.random() * 0.95 * 100) / 100 : 0.0) : null,
+            iridescence: isPearlescent ? Math.round((0.4 + Math.random() * 0.6) * 100) / 100 : null,
+            iridescenceIOR: isPearlescent ? Math.round((1.3 + Math.random() * 0.8) * 100) / 100 : null,
+            sheen: isPearlescent ? Math.round((0.3 + Math.random() * 0.7) * 100) / 100 : null,
+            sheenColor: isPearlescent ? getRandomItem(['#ffb3d9', '#ffd7a8', '#a8f0ff', '#d8b4fe']) : null
+          }
+        };
+      }
+
       const randomizeMatsBtn = document.getElementById('randomize-mats-btn');
       if (randomizeMatsBtn) {
         randomizeMatsBtn.addEventListener('click', () => {
-          diceEngine.randomizePoolMaterials();
-          updatePoolChipsUI();
-          if (currentMode === 'tray') {
-            diceEngine.activeDiceInstances.forEach((d, idx) => {
-              const matKey = (diceEngine.poolMaterials && diceEngine.poolMaterials[idx]) || currentMaterial;
-              diceEngine.setDieMaterial(d, matKey);
+          const selectedDie = diceEngine.getSelectedDie();
+          if (selectedDie) {
+            const cfg = generateShuffledDieConfig();
+            diceEngine.setDieMaterial(selectedDie, cfg.material);
+            diceEngine.setDieStyle(selectedDie, cfg.style);
+          } else {
+            diceEngine.activeDiceInstances.forEach((d) => {
+              const cfg = generateShuffledDieConfig();
+              diceEngine.setDieMaterial(d, cfg.material);
+              diceEngine.setDieStyle(d, cfg.style);
             });
           }
+          updateMaterialUI();
+          updateFaceStyleUI();
+          updatePoolChipsUI();
         });
       }
 
@@ -1987,6 +2215,78 @@
         });
       }
 
+      // Bevel Radius Slider Listener
+      const bevelRadiusSlider = document.getElementById('bevel-radius-slider');
+      if (bevelRadiusSlider) {
+        bevelRadiusSlider.addEventListener('input', (e) => {
+          setBevelUI(parseFloat(e.target.value));
+        });
+      }
+
+      // PBR Roughness
+      const paramRoughness = document.getElementById('param-roughness');
+      if (paramRoughness) {
+        paramRoughness.addEventListener('input', (e) => {
+          applyStyleChange({ roughness: parseFloat(e.target.value) });
+        });
+      }
+
+      // PBR Metalness
+      const paramMetalness = document.getElementById('param-metalness');
+      if (paramMetalness) {
+        paramMetalness.addEventListener('input', (e) => {
+          applyStyleChange({ metalness: parseFloat(e.target.value) });
+        });
+      }
+
+      // Pearlescent Iridescence
+      const paramIridescence = document.getElementById('param-iridescence');
+      if (paramIridescence) {
+        paramIridescence.addEventListener('input', (e) => {
+          applyStyleChange({ iridescence: parseFloat(e.target.value) });
+        });
+      }
+
+      // Iridescence IOR
+      const paramIridescenceIor = document.getElementById('param-iridescence-ior');
+      if (paramIridescenceIor) {
+        paramIridescenceIor.addEventListener('input', (e) => {
+          applyStyleChange({ iridescenceIOR: parseFloat(e.target.value) });
+        });
+      }
+
+      // Sheen
+      const paramSheen = document.getElementById('param-sheen');
+      if (paramSheen) {
+        paramSheen.addEventListener('input', (e) => {
+          applyStyleChange({ sheen: parseFloat(e.target.value) });
+        });
+      }
+
+      // Sheen Color
+      const paramSheenColor = document.getElementById('param-sheen-color');
+      if (paramSheenColor) {
+        paramSheenColor.addEventListener('input', (e) => {
+          applyStyleChange({ sheenColor: e.target.value });
+        });
+      }
+
+      // Reset PBR & Pearl to Material Defaults
+      const paramPbrAuto = document.getElementById('param-pbr-auto');
+      if (paramPbrAuto) {
+        paramPbrAuto.addEventListener('click', () => {
+          applyStyleChange({
+            roughness: null,
+            metalness: null,
+            clearcoat: null,
+            iridescence: null,
+            iridescenceIOR: null,
+            sheen: null,
+            sheenColor: null
+          });
+        });
+      }
+
       // Face & Edge Styling Preset Listeners
       const edgeButtons = document.querySelectorAll('#edge-preset-row button');
       edgeButtons.forEach(btn => {
@@ -2011,11 +2311,11 @@
             applyStyleChange({
               edgeColor: '#ffd700',
               edgeEmbossDepth: 1.0,
-              faceFillColor: null,
+              faceFillColor: '#14110c',
               faceOpacity: 1.0,
               fontColor: '#ffd700',
               fontEmbossDepth: -1.0,
-              fontShadowColor: '#251b03',
+              fontShadowColor: '#382604',
               fontShadowRadius: 1.2,
               bevelColor: '#d4af37'
             });
@@ -2023,9 +2323,9 @@
             applyStyleChange({
               edgeColor: '#00f7ff',
               edgeEmbossDepth: 1.0,
-              faceFillColor: '#101726',
+              faceFillColor: '#090e1c',
               faceOpacity: 1.0,
-              fontColor: '#00f7ff',
+              fontColor: '#ffffff',
               fontEmbossDepth: -1.0,
               fontShadowColor: '#003844',
               fontShadowRadius: 1.5,
@@ -2035,9 +2335,9 @@
             applyStyleChange({
               edgeColor: '#ff2a4b',
               edgeEmbossDepth: 1.0,
-              faceFillColor: '#1a0508',
+              faceFillColor: '#160306',
               faceOpacity: 1.0,
-              fontColor: '#ffffff',
+              fontColor: '#ffeaee',
               fontEmbossDepth: -1.0,
               fontShadowColor: '#45000c',
               fontShadowRadius: 1.0,
@@ -2045,15 +2345,15 @@
             });
           } else if (edgeType === 'white') {
             applyStyleChange({
-              edgeColor: '#d4af37',
+              edgeColor: '#c59b27',
               edgeEmbossDepth: 1.0,
-              faceFillColor: '#f7f4ea',
+              faceFillColor: '#f8f5eb',
               faceOpacity: 1.0,
-              fontColor: '#2b261d',
+              fontColor: '#1c160e',
               fontEmbossDepth: -1.0,
-              fontShadowColor: '#c5baa5',
+              fontShadowColor: '#baa888',
               fontShadowRadius: 0.8,
-              bevelColor: '#d4af37'
+              bevelColor: '#2b2318'
             });
           }
         });

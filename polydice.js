@@ -586,10 +586,10 @@ function buildHedronMesh(rawPoints, isDual = false, bevel = 0.0, bevelSegments =
             const nB0 = arcNormals[s];
             const nB1 = arcNormals[s + 1];
 
-            const u0 = 0.003;
-            const u1 = 0.007;
-            const v0 = 0.003 + 0.004 * (s / segments);
-            const v1 = 0.003 + 0.004 * ((s + 1) / segments);
+            const u0 = 0.018;
+            const u1 = 0.032;
+            const v0 = 0.018 + 0.014 * (s / segments);
+            const v1 = 0.018 + 0.014 * ((s + 1) / segments);
 
             // Tri 1: pA0 -> pB1 -> pB0 (CCW outward)
             positions.push(pA0.x, pA0.y, pA0.z);
@@ -664,7 +664,7 @@ function buildHedronMesh(rawPoints, isDual = false, bevel = 0.0, bevelSegments =
         return angA - angB;
       });
 
-      const uCenter = 0.005, vCenter = 0.005, rUV = 0.0025;
+      const uCenter = 0.025, vCenter = 0.025, rUV = 0.008;
 
       if (segments === 1) {
         // Flat polygon fan for 1-segment chamfer with healthy non-zero UVs
@@ -832,8 +832,8 @@ const DICE_MATERIALS = {
     fleckColor1: 'rgba(255,140,160,',
     fleckColor2: 'rgba(70,0,10,',
     hasFlecks: false,
-    numOcclusionColor: 'rgba(255, 255, 255, 0.98)',
-    numFillColor: '#fffaed', // radiant warm gold enamel inlay
+    numOcclusionColor: 'rgba(40, 0, 10, 0.95)',
+    numFillColor: '#ffd700', // radiant polished gold enamel inlay
     roughness: 0.08,
     metalness: 0.02,
     clearcoat: 0.9,
@@ -853,7 +853,7 @@ const DICE_MATERIALS = {
     fleckColor2: 'rgba(0,40,20,',
     hasFlecks: false,
     numOcclusionColor: 'rgba(0, 40, 20, 0.98)',
-    numFillColor: '#ffffffff', // brilliant gold leaf inlay
+    numFillColor: '#ffd700', // brilliant gold leaf inlay
     roughness: 0.08,
     metalness: 0.02,
     clearcoat: 0.9,
@@ -965,9 +965,29 @@ let currentMaterial = 'ruby';
 let currentBevel = 0.20;
 let currentBevelSegments = 4;
 
-function createDiceMaterial(diffuseMap, normalMap, matKey = currentMaterial, isFlatShaded = false, iridescenceThicknessMap = null, transmissionMap = null, alphaMap = null, bevel = currentBevel) {
+function createDiceMaterial(diffuseMap, normalMap, matKey = currentMaterial, isFlatShaded = false, iridescenceThicknessMap = null, transmissionMap = null, alphaMap = null, bevel = currentBevel, styleOptions = {}) {
   const matDef = DICE_MATERIALS[matKey] || DICE_MATERIALS.obsidian;
-  const isPhysical = (matDef.transmission > 0) || (matDef.iridescence > 0) || (matDef.sheen > 0) || (matDef.clearcoat > 0);
+
+  const roughness = (styleOptions.roughness !== undefined && styleOptions.roughness !== null)
+    ? styleOptions.roughness : matDef.roughness;
+  const metalness = (styleOptions.metalness !== undefined && styleOptions.metalness !== null)
+    ? styleOptions.metalness : matDef.metalness;
+  const clearcoat = (styleOptions.clearcoat !== undefined && styleOptions.clearcoat !== null)
+    ? styleOptions.clearcoat : (matDef.clearcoat || 0);
+  const clearcoatRoughness = (styleOptions.clearcoatRoughness !== undefined && styleOptions.clearcoatRoughness !== null)
+    ? styleOptions.clearcoatRoughness : (matDef.clearcoatRoughness || 0.1);
+
+  const iridescence = (styleOptions.iridescence !== undefined && styleOptions.iridescence !== null)
+    ? styleOptions.iridescence : (matDef.iridescence || 0);
+  const iridescenceIOR = (styleOptions.iridescenceIOR !== undefined && styleOptions.iridescenceIOR !== null)
+    ? styleOptions.iridescenceIOR : (matDef.iridescenceIOR || 1.6);
+  const sheen = (styleOptions.sheen !== undefined && styleOptions.sheen !== null)
+    ? styleOptions.sheen : (matDef.sheen || 0);
+  const sheenColor = styleOptions.sheenColor || matDef.sheenColor || '#ffd6ea';
+  const sheenRoughness = (styleOptions.sheenRoughness !== undefined && styleOptions.sheenRoughness !== null)
+    ? styleOptions.sheenRoughness : (matDef.sheenRoughness || 0.2);
+
+  const isPhysical = (matDef.transmission > 0) || (iridescence > 0) || (sheen > 0) || (clearcoat > 0);
   const MaterialClass = isPhysical ? THREE.MeshPhysicalMaterial : THREE.MeshStandardMaterial;
 
   const activeBevel = (typeof bevel === 'number') ? bevel : currentBevel;
@@ -978,30 +998,30 @@ function createDiceMaterial(diffuseMap, normalMap, matKey = currentMaterial, isF
     map: diffuseMap,
     normalMap: normalMap,
     normalScale: new THREE.Vector2(nScale, nScale),
-    roughness: matDef.roughness,
-    metalness: matDef.metalness,
+    roughness: roughness,
+    metalness: metalness,
     flatShading: isFlatShaded,
     dithering: true
   };
 
-  if (matDef.clearcoat > 0) {
-    matParams.clearcoat = matDef.clearcoat;
-    matParams.clearcoatRoughness = matDef.clearcoatRoughness || 0.1;
+  if (clearcoat > 0) {
+    matParams.clearcoat = clearcoat;
+    matParams.clearcoatRoughness = clearcoatRoughness;
   }
 
-  if (matDef.iridescence > 0) {
-    matParams.iridescence = matDef.iridescence;
-    matParams.iridescenceIOR = matDef.iridescenceIOR || 1.6;
+  if (iridescence > 0) {
+    matParams.iridescence = iridescence;
+    matParams.iridescenceIOR = iridescenceIOR;
     matParams.iridescenceThicknessRange = matDef.iridescenceThicknessRange || [100, 400];
     if (iridescenceThicknessMap) {
       matParams.iridescenceThicknessMap = iridescenceThicknessMap;
     }
   }
 
-  if (matDef.sheen > 0) {
-    matParams.sheen = matDef.sheen;
-    matParams.sheenColor = new THREE.Color(matDef.sheenColor || '#ffd6ea');
-    matParams.sheenRoughness = matDef.sheenRoughness || 0.2;
+  if (sheen > 0) {
+    matParams.sheen = sheen;
+    matParams.sheenColor = new THREE.Color(sheenColor);
+    matParams.sheenRoughness = sheenRoughness;
   }
 
   if (matDef.transmission > 0) {
@@ -1041,6 +1061,8 @@ function normalizeStyleOptions(opts = {}) {
   if (res.numOcclusionColor !== undefined && res.fontShadowColor === undefined) res.fontShadowColor = res.numOcclusionColor;
   if (res.faceColor !== undefined && res.faceFillColor === undefined) res.faceFillColor = res.faceColor;
   if (res.faceFillColor !== undefined && res.faceColor === undefined) res.faceColor = res.faceFillColor;
+  if (res.bevelRadius !== undefined && res.bevel === undefined) res.bevel = res.bevelRadius;
+  if (res.bevel !== undefined && res.bevelRadius === undefined) res.bevelRadius = res.bevel;
   return res;
 }
 
@@ -1050,21 +1072,21 @@ function createDiceTextures(numFaces, cols, rows, faceInfos, isInspector = false
   const matDef = DICE_MATERIALS[matKey] || DICE_MATERIALS.obsidian;
   const normStyle = normalizeStyleOptions(styleOptions);
   const mergedStyle = {
-    fontFamily: normStyle.fontFamily !== undefined ? normStyle.fontFamily : (matDef.fontFamily || null),
-    fontWeight: normStyle.fontWeight !== undefined ? normStyle.fontWeight : (matDef.fontWeight || 'bold'),
-    fontColor: normStyle.fontColor !== undefined ? normStyle.fontColor : (matDef.numFillColor || '#ffffff'),
-    fontEmbossDepth: normStyle.fontEmbossDepth !== undefined ? normStyle.fontEmbossDepth : -1.0,
-    fontShadowColor: normStyle.fontShadowColor !== undefined ? normStyle.fontShadowColor : (matDef.numOcclusionColor || 'rgba(0,0,0,0.85)'),
-    fontShadowRadius: normStyle.fontShadowRadius !== undefined ? normStyle.fontShadowRadius : 1.0,
-    faceFillColor: normStyle.faceFillColor !== undefined ? normStyle.faceFillColor : (matDef.faceFillColor || null),
-    faceOpacity: normStyle.faceOpacity !== undefined ? normStyle.faceOpacity : 1.0,
-    edgeColor: normStyle.edgeColor !== undefined ? normStyle.edgeColor : (matDef.edgeColor || null),
-    edgeWidth: normStyle.edgeWidth !== undefined ? normStyle.edgeWidth : (matDef.edgeWidth != null ? matDef.edgeWidth : null),
-    edgeInset: normStyle.edgeInset !== undefined ? normStyle.edgeInset : (matDef.edgeInset != null ? matDef.edgeInset : 0.0),
-    edgeEmbossDepth: normStyle.edgeEmbossDepth !== undefined ? normStyle.edgeEmbossDepth : 1.0,
-    bevelColor: normStyle.bevelColor !== undefined ? normStyle.bevelColor : (matDef.bevelColor || null),
-    edgeGroove: normStyle.edgeGroove !== undefined ? normStyle.edgeGroove : (matDef.edgeGroove !== false),
-    edgeOpacityMask: normStyle.edgeOpacityMask !== undefined ? normStyle.edgeOpacityMask : (matDef.edgeOpacityMask !== false)
+    fontFamily: normStyle.fontFamily || matDef.fontFamily || null,
+    fontWeight: normStyle.fontWeight || matDef.fontWeight || 'bold',
+    fontColor: normStyle.fontColor || matDef.numFillColor || '#ffffff',
+    fontEmbossDepth: (normStyle.fontEmbossDepth !== undefined && normStyle.fontEmbossDepth !== null) ? normStyle.fontEmbossDepth : -1.0,
+    fontShadowColor: normStyle.fontShadowColor || matDef.numOcclusionColor || 'rgba(0,0,0,0.85)',
+    fontShadowRadius: (normStyle.fontShadowRadius !== undefined && normStyle.fontShadowRadius !== null) ? normStyle.fontShadowRadius : 1.0,
+    faceFillColor: normStyle.faceFillColor || null,
+    faceOpacity: (normStyle.faceOpacity !== undefined && normStyle.faceOpacity !== null) ? normStyle.faceOpacity : 1.0,
+    edgeColor: normStyle.edgeColor || null,
+    edgeWidth: (normStyle.edgeWidth !== undefined && normStyle.edgeWidth !== null) ? normStyle.edgeWidth : (matDef.edgeWidth != null ? matDef.edgeWidth : null),
+    edgeInset: (normStyle.edgeInset !== undefined && normStyle.edgeInset !== null) ? normStyle.edgeInset : (matDef.edgeInset != null ? matDef.edgeInset : 0.0),
+    edgeEmbossDepth: (normStyle.edgeEmbossDepth !== undefined && normStyle.edgeEmbossDepth !== null) ? normStyle.edgeEmbossDepth : 1.0,
+    bevelColor: normStyle.bevelColor || null,
+    edgeGroove: normStyle.edgeGroove !== false,
+    edgeOpacityMask: normStyle.edgeOpacityMask !== false
   };
 
   // 1. Heightmap Canvas (initialized to 128 neutral mid-gray for Sobel: values > 128 create outset ridges, < 128 create inset trenches)
@@ -1388,7 +1410,7 @@ function createDiceTextures(numFaces, cols, rows, faceInfos, isInspector = false
 
   // Ensure pristine noise-free margin for chamfer/bevel UV mapping in extreme bottom-left corner
   // Stamped AFTER face rendering so no blur/shadow from cell (0, 0) can bleed into the bevel patch
-  const patchSize = Math.max(12, Math.round(size * 0.012));
+  const patchSize = Math.max(48, Math.round(size * 0.05));
   const bevelFillColor = mergedStyle.bevelColor || matDef.bevelColor || matDef.baseColor;
   dCtx.clearRect(0, size - patchSize, patchSize, patchSize);
   dCtx.fillStyle = bevelFillColor;
@@ -1397,7 +1419,8 @@ function createDiceTextures(numFaces, cols, rows, faceInfos, isInspector = false
   hCtx.fillStyle = '#808080';
   hCtx.fillRect(0, size - patchSize, patchSize, patchSize);
 
-  tCtx.fillStyle = '#ffffff';
+  const isCustomBevel = Boolean(mergedStyle.bevelColor);
+  tCtx.fillStyle = (isCustomBevel || !matDef.transmission) ? '#000000' : '#ffffff';
   tCtx.fillRect(0, size - patchSize, patchSize, patchSize);
 
   aCtx.fillStyle = '#ffffff';
@@ -1473,7 +1496,9 @@ function createDiceTextures(numFaces, cols, rows, faceInfos, isInspector = false
   } else if (THREE.sRGBEncoding) {
     diffuseMap.encoding = THREE.sRGBEncoding;
   }
-  diffuseMap.generateMipmaps = true;
+  diffuseMap.generateMipmaps = false;
+  diffuseMap.minFilter = THREE.LinearFilter;
+  diffuseMap.magFilter = THREE.LinearFilter;
   diffuseMap.needsUpdate = true;
 
   const normalMap = new THREE.CanvasTexture(normCanvas);
@@ -1484,11 +1509,14 @@ function createDiceTextures(numFaces, cols, rows, faceInfos, isInspector = false
   } else if (THREE.LinearEncoding) {
     normalMap.encoding = THREE.LinearEncoding;
   }
-  normalMap.generateMipmaps = true;
+  normalMap.generateMipmaps = false;
+  normalMap.minFilter = THREE.LinearFilter;
+  normalMap.magFilter = THREE.LinearFilter;
   normalMap.needsUpdate = true;
 
   let iridescenceThicknessMap = null;
-  if (matDef.useIridescenceMap) {
+  const hasIridescence = matDef.useIridescenceMap || (normStyle.iridescence !== undefined && normStyle.iridescence !== null && normStyle.iridescence > 0);
+  if (hasIridescence) {
     const thickSize = 512;
     const thickCanvas = document.createElement('canvas');
     thickCanvas.width = thickSize;
@@ -1529,14 +1557,18 @@ function createDiceTextures(numFaces, cols, rows, faceInfos, isInspector = false
   const transmissionMap = new THREE.CanvasTexture(transCanvas);
   transmissionMap.wrapS = THREE.ClampToEdgeWrapping;
   transmissionMap.wrapT = THREE.ClampToEdgeWrapping;
-  transmissionMap.generateMipmaps = true;
+  transmissionMap.generateMipmaps = false;
+  transmissionMap.minFilter = THREE.LinearFilter;
+  transmissionMap.magFilter = THREE.LinearFilter;
   transmissionMap.needsUpdate = true;
 
   // Opacity / Alpha Map (opacity modulated so numbers are 100% solid opaque)
   const alphaMap = new THREE.CanvasTexture(alphaCanvas);
   alphaMap.wrapS = THREE.ClampToEdgeWrapping;
   alphaMap.wrapT = THREE.ClampToEdgeWrapping;
-  alphaMap.generateMipmaps = true;
+  alphaMap.generateMipmaps = false;
+  alphaMap.minFilter = THREE.LinearFilter;
+  alphaMap.magFilter = THREE.LinearFilter;
   alphaMap.needsUpdate = true;
 
   return { diffuseMap, normalMap, iridescenceThicknessMap, transmissionMap, alphaMap };
@@ -1869,6 +1901,13 @@ export class PolyDice {
     this.bevelColor = initStyle.bevelColor || null;
     this.edgeGroove = initStyle.edgeGroove !== false;
     this.edgeOpacityMask = initStyle.edgeOpacityMask !== false;
+    this.roughness = initStyle.roughness !== undefined ? initStyle.roughness : null;
+    this.metalness = initStyle.metalness !== undefined ? initStyle.metalness : null;
+    this.clearcoat = initStyle.clearcoat !== undefined ? initStyle.clearcoat : null;
+    this.iridescence = initStyle.iridescence !== undefined ? initStyle.iridescence : null;
+    this.iridescenceIOR = initStyle.iridescenceIOR !== undefined ? initStyle.iridescenceIOR : null;
+    this.sheen = initStyle.sheen !== undefined ? initStyle.sheen : null;
+    this.sheenColor = initStyle.sheenColor || null;
 
     // Dice pool and instances
     this.dicePool = options.initialPool ? [...options.initialPool] : ['d4', 'd6', 'd8', 'd10', 'd10', 'd12', 'd20'];
@@ -2133,7 +2172,14 @@ export class PolyDice {
       edgeEmbossDepth: this.edgeEmbossDepth,
       bevelColor: this.bevelColor,
       edgeGroove: this.edgeGroove,
-      edgeOpacityMask: this.edgeOpacityMask
+      edgeOpacityMask: this.edgeOpacityMask,
+      roughness: this.roughness,
+      metalness: this.metalness,
+      clearcoat: this.clearcoat,
+      iridescence: this.iridescence,
+      iridescenceIOR: this.iridescenceIOR,
+      sheen: this.sheen,
+      sheenColor: this.sheenColor
     }, options);
     const styleOptions = normalizeStyleOptions(rawOpts);
 
@@ -2151,6 +2197,13 @@ export class PolyDice {
     if (styleOptions.edgeInset != null && styleOptions.edgeInset !== 0.0) styleKeyParts.push(`ei:${styleOptions.edgeInset}`);
     if (styleOptions.edgeEmbossDepth !== undefined && styleOptions.edgeEmbossDepth !== 1.0) styleKeyParts.push(`eed:${styleOptions.edgeEmbossDepth}`);
     if (styleOptions.bevelColor) styleKeyParts.push(`bc:${styleOptions.bevelColor}`);
+    if (styleOptions.roughness !== undefined && styleOptions.roughness !== null) styleKeyParts.push(`r:${styleOptions.roughness}`);
+    if (styleOptions.metalness !== undefined && styleOptions.metalness !== null) styleKeyParts.push(`m:${styleOptions.metalness}`);
+    if (styleOptions.clearcoat !== undefined && styleOptions.clearcoat !== null) styleKeyParts.push(`cc:${styleOptions.clearcoat}`);
+    if (styleOptions.iridescence !== undefined && styleOptions.iridescence !== null) styleKeyParts.push(`ir:${styleOptions.iridescence}`);
+    if (styleOptions.iridescenceIOR !== undefined && styleOptions.iridescenceIOR !== null) styleKeyParts.push(`ior:${styleOptions.iridescenceIOR}`);
+    if (styleOptions.sheen !== undefined && styleOptions.sheen !== null) styleKeyParts.push(`sh:${styleOptions.sheen}`);
+    if (styleOptions.sheenColor) styleKeyParts.push(`sc:${styleOptions.sheenColor}`);
 
     const styleKey = styleKeyParts.length ? `_${styleKeyParts.join('_')}` : '';
     const cacheKey = `${type}_${bevel}_${bevelSegments}_${materialKey}${styleKey}`;
@@ -2192,11 +2245,14 @@ export class PolyDice {
       iridescenceThicknessMap,
       transmissionMap,
       alphaMap,
-      bevel
+      bevel,
+      styleOptions
     );
 
     const asset = {
       type,
+      bevel,
+      bevelSegments,
       geometry,
       basePoints,
       material,
@@ -2290,6 +2346,10 @@ export class PolyDice {
       d.mesh.material = asset.material;
       if (d.outlineMesh) d.outlineMesh.geometry = asset.geometry;
       d.asset = asset;
+      if (d.body && !this.fastPhysics) {
+        const shape = this._getAmmoConvexShape(d.type, asset);
+        d.body.setCollisionShape(shape);
+      }
     });
 
     this.emit('bevelChange', { bevel: this.bevel, segments: this.bevelSegments });
@@ -2377,6 +2437,15 @@ export class PolyDice {
     if (norm.bevelColor !== undefined) this.bevelColor = norm.bevelColor;
     if (norm.edgeGroove !== undefined) this.edgeGroove = norm.edgeGroove;
     if (norm.edgeOpacityMask !== undefined) this.edgeOpacityMask = norm.edgeOpacityMask;
+    if (norm.roughness !== undefined) this.roughness = norm.roughness;
+    if (norm.metalness !== undefined) this.metalness = norm.metalness;
+    if (norm.clearcoat !== undefined) this.clearcoat = norm.clearcoat;
+    if (norm.iridescence !== undefined) this.iridescence = norm.iridescence;
+    if (norm.iridescenceIOR !== undefined) this.iridescenceIOR = norm.iridescenceIOR;
+    if (norm.sheen !== undefined) this.sheen = norm.sheen;
+    if (norm.sheenColor !== undefined) this.sheenColor = norm.sheenColor;
+    if (norm.bevel !== undefined) this.bevel = norm.bevel;
+    if (norm.bevelSegments !== undefined) this.bevelSegments = norm.bevelSegments;
 
     this.activeDiceInstances.forEach(d => {
       const mat = d.materialKey || this.materialKey;
@@ -2398,7 +2467,14 @@ export class PolyDice {
         edgeEmbossDepth: this.edgeEmbossDepth,
         bevelColor: this.bevelColor,
         edgeGroove: this.edgeGroove,
-        edgeOpacityMask: this.edgeOpacityMask
+        edgeOpacityMask: this.edgeOpacityMask,
+        roughness: this.roughness,
+        metalness: this.metalness,
+        clearcoat: this.clearcoat,
+        iridescence: this.iridescence,
+        iridescenceIOR: this.iridescenceIOR,
+        sheen: this.sheen,
+        sheenColor: this.sheenColor
       }, d.styleOptions || {});
       const asset = this.getDiceAsset(d.type, opts);
       d.mesh.geometry = asset.geometry;
@@ -2464,7 +2540,14 @@ export class PolyDice {
       edgeEmbossDepth: this.edgeEmbossDepth,
       bevelColor: this.bevelColor,
       edgeGroove: this.edgeGroove,
-      edgeOpacityMask: this.edgeOpacityMask
+      edgeOpacityMask: this.edgeOpacityMask,
+      roughness: this.roughness,
+      metalness: this.metalness,
+      clearcoat: this.clearcoat,
+      iridescence: this.iridescence,
+      iridescenceIOR: this.iridescenceIOR,
+      sheen: this.sheen,
+      sheenColor: this.sheenColor
     }, d.styleOptions);
 
     const asset = this.getDiceAsset(d.type, opts);
@@ -2472,6 +2555,10 @@ export class PolyDice {
     d.mesh.material = asset.material;
     if (d.outlineMesh) d.outlineMesh.geometry = asset.geometry;
     d.asset = asset;
+    if (d.body && !this.fastPhysics) {
+      const shape = this._getAmmoConvexShape(d.type, asset);
+      d.body.setCollisionShape(shape);
+    }
     this.emit('dieStyleChange', { die: d, style: d.styleOptions, index: idx });
     return d;
   }
@@ -2550,12 +2637,30 @@ export class PolyDice {
       edgeEmbossDepth: this.edgeEmbossDepth,
       bevelColor: this.bevelColor,
       edgeGroove: this.edgeGroove,
-      edgeOpacityMask: this.edgeOpacityMask
+      edgeOpacityMask: this.edgeOpacityMask,
+      roughness: this.roughness !== undefined ? this.roughness : null,
+      metalness: this.metalness !== undefined ? this.metalness : null,
+      clearcoat: this.clearcoat !== undefined ? this.clearcoat : null,
+      iridescence: this.iridescence !== undefined ? this.iridescence : null,
+      iridescenceIOR: this.iridescenceIOR !== undefined ? this.iridescenceIOR : null,
+      sheen: this.sheen !== undefined ? this.sheen : null,
+      sheenColor: this.sheenColor !== undefined ? this.sheenColor : null,
+      bevel: this.bevel,
+      bevelSegments: this.bevelSegments
     };
     if (d && d.styleOptions) {
       return Object.assign({}, base, d.styleOptions);
     }
     return base;
+  }
+
+  setDieBevel(dieOrId, bevel, segments = null) {
+    let d = typeof dieOrId === 'object' ? dieOrId : this.activeDiceInstances.find(x => x.id === dieOrId);
+    if (!d) return null;
+    const patch = {};
+    if (bevel !== undefined && bevel !== null) patch.bevel = bevel;
+    if (segments !== undefined && segments !== null) patch.bevelSegments = segments;
+    return this.setDieStyle(d, patch);
   }
 
   getDieMaterial(dieOrId) {
@@ -2588,14 +2693,14 @@ export class PolyDice {
     if (!d || !d.outlineMesh) return;
     if (isSelected) {
       d.outlineMesh.material.color.set(0x61afef); // Bright electric cyan selection halo
-      d.outlineMesh.scale.setScalar(1.09);
+      d.outlineMesh.scale.setScalar(1.045);
       d.outlineMesh.visible = true;
     } else {
       if (!this.isShowcase) {
         d.outlineMesh.visible = false;
       } else {
         d.outlineMesh.material.color.set(0xff7a18); // Showcase gold-orange
-        d.outlineMesh.scale.setScalar(1.07);
+        d.outlineMesh.scale.setScalar(1.04);
         d.outlineMesh.visible = true;
       }
     }
@@ -2605,7 +2710,9 @@ export class PolyDice {
     const geometry = (asset && asset.geometry) ? asset.geometry : asset;
     const basePoints = (asset && asset.basePoints) ? asset.basePoints : null;
     const isFast = this.fastPhysics;
-    const cacheKey = isFast ? `${type}_fast` : `${type}_${this.bevel}_${this.bevelSegments}`;
+    const actualBevel = (asset && asset.bevel !== undefined) ? asset.bevel : this.bevel;
+    const actualSegments = (asset && asset.bevelSegments !== undefined) ? asset.bevelSegments : this.bevelSegments;
+    const cacheKey = isFast ? `${type}_fast` : `${type}_${actualBevel}_${actualSegments}`;
 
     if (this.convexShapeCache.has(cacheKey)) {
       return this.convexShapeCache.get(cacheKey);
@@ -2766,7 +2873,81 @@ export class PolyDice {
       if (this.poolMaterials && this.poolMaterials[index] !== undefined) {
         this.poolMaterials.splice(index, 1);
       }
+      if (this.poolStyles && this.poolStyles[index] !== undefined) {
+        this.poolStyles.splice(index, 1);
+      }
+      this.emit('poolChange', [...this.dicePool]);
     }
+  }
+
+  /**
+   * Remove a specific die instance from both the active 3D physics playfield and pool.
+   * @param {Object|number} dieOrId Die instance object or numerical ID
+   * @returns {boolean} True if successfully removed
+   */
+  removeDie(dieOrId) {
+    let d = null;
+    let idx = -1;
+    if (typeof dieOrId === 'object' && dieOrId !== null) {
+      d = dieOrId;
+      idx = this.activeDiceInstances.indexOf(d);
+    } else {
+      idx = this.activeDiceInstances.findIndex(x => x.id === dieOrId);
+      d = idx !== -1 ? this.activeDiceInstances[idx] : null;
+    }
+
+    if (!d || idx === -1) {
+      if (typeof dieOrId === 'number' && dieOrId >= 0 && dieOrId < this.dicePool.length) {
+        this.removeDieFromPool(dieOrId);
+        return true;
+      }
+      return false;
+    }
+
+    // Deselect if currently selected
+    if (this.selectedDie === d) {
+      this.deselectDie();
+    }
+
+    // Remove physics rigid body
+    if (d.body && this.physicsWorld) {
+      this.physicsWorld.removeRigidBody(d.body);
+      if (d.body.getMotionState()) this.AmmoLib.destroy(d.body.getMotionState());
+      this.AmmoLib.destroy(d.body);
+      d.body = null;
+    }
+
+    // Remove Three.js meshes
+    if (d.outlineMesh) {
+      if (d.outlineMesh.material) d.outlineMesh.material.dispose();
+      if (d.outlineMesh.parent) d.outlineMesh.parent.remove(d.outlineMesh);
+    }
+    if (d.mesh) {
+      this.group.remove(d.mesh);
+    }
+
+    // Splice active instance
+    this.activeDiceInstances.splice(idx, 1);
+
+    // Sync dice pool arrays
+    if (idx < this.dicePool.length) {
+      this.dicePool.splice(idx, 1);
+    }
+    if (this.poolMaterials && idx < this.poolMaterials.length) {
+      this.poolMaterials.splice(idx, 1);
+    }
+    if (this.poolStyles && idx < this.poolStyles.length) {
+      this.poolStyles.splice(idx, 1);
+    }
+
+    // Re-index remaining active dice sequentially
+    this.activeDiceInstances.forEach((die, i) => {
+      die.id = i + 1;
+    });
+
+    this.emit('poolChange', [...this.dicePool]);
+    this.emit('dieRemoved', { die: d, index: idx });
+    return true;
   }
 
   clearActiveDice() {
@@ -2870,12 +3051,16 @@ export class PolyDice {
     this.physicsWorld.addRigidBody(body);
 
     const outlineMat = new this.THREE.MeshBasicMaterial({
-      color: 0xff7a18,
+      color: 0x61afef,
       side: this.THREE.BackSide,
+      transparent: true,
+      opacity: 1.0,
+      depthTest: true,
       depthWrite: false
     });
     const outlineMesh = new this.THREE.Mesh(asset.geometry, outlineMat);
-    outlineMesh.scale.setScalar(1.07);
+    outlineMesh.scale.setScalar(1.045);
+    outlineMesh.renderOrder = 100;
     outlineMesh.visible = false;
     mesh.add(outlineMesh);
 
