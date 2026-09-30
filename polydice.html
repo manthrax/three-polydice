@@ -1442,6 +1442,93 @@
         updateFaceStyleUI();
       }
 
+      // Debounce & Throttle infrastructure to prevent slider dragging from flooding the main thread
+      let pendingStylePatch = null;
+      let styleDebounceTimer = null;
+      let styleLastExecTime = 0;
+      const STYLE_DEBOUNCE_MS = 60;
+      const STYLE_MAX_WAIT_MS = 130;
+
+      function queueStyleChange(patch, immediate = false) {
+        pendingStylePatch = Object.assign(pendingStylePatch || {}, patch);
+        if (immediate) {
+          flushStyleChange();
+          return;
+        }
+
+        const now = performance.now();
+        const elapsed = now - styleLastExecTime;
+
+        if (elapsed >= STYLE_MAX_WAIT_MS) {
+          flushStyleChange();
+          return;
+        }
+
+        if (styleDebounceTimer) clearTimeout(styleDebounceTimer);
+        const wait = Math.min(STYLE_DEBOUNCE_MS, STYLE_MAX_WAIT_MS - elapsed);
+        styleDebounceTimer = setTimeout(() => {
+          flushStyleChange();
+        }, Math.max(10, wait));
+      }
+
+      function flushStyleChange() {
+        if (styleDebounceTimer) {
+          clearTimeout(styleDebounceTimer);
+          styleDebounceTimer = null;
+        }
+        if (pendingStylePatch) {
+          const patch = pendingStylePatch;
+          pendingStylePatch = null;
+          styleLastExecTime = performance.now();
+          applyStyleChange(patch);
+        }
+      }
+
+      let pendingBevelVal = null;
+      let pendingBevelSegments = null;
+      let bevelDebounceTimer = null;
+      let bevelLastExecTime = 0;
+      const BEVEL_DEBOUNCE_MS = 60;
+      const BEVEL_MAX_WAIT_MS = 130;
+
+      function queueBevelUI(bevel, segments = null, immediate = false) {
+        if (bevel !== null && bevel !== undefined) pendingBevelVal = bevel;
+        if (segments !== null && segments !== undefined) pendingBevelSegments = segments;
+        if (immediate) {
+          flushBevelUI();
+          return;
+        }
+
+        const now = performance.now();
+        const elapsed = now - bevelLastExecTime;
+
+        if (elapsed >= BEVEL_MAX_WAIT_MS) {
+          flushBevelUI();
+          return;
+        }
+
+        if (bevelDebounceTimer) clearTimeout(bevelDebounceTimer);
+        const wait = Math.min(BEVEL_DEBOUNCE_MS, BEVEL_MAX_WAIT_MS - elapsed);
+        bevelDebounceTimer = setTimeout(() => {
+          flushBevelUI();
+        }, Math.max(10, wait));
+      }
+
+      function flushBevelUI() {
+        if (bevelDebounceTimer) {
+          clearTimeout(bevelDebounceTimer);
+          bevelDebounceTimer = null;
+        }
+        if (pendingBevelVal !== null || pendingBevelSegments !== null) {
+          const b = pendingBevelVal !== null ? pendingBevelVal : currentBevel;
+          const s = pendingBevelSegments !== null ? pendingBevelSegments : currentBevelSegments;
+          pendingBevelVal = null;
+          pendingBevelSegments = null;
+          bevelLastExecTime = performance.now();
+          setBevelUI(b, s);
+        }
+      }
+
       function updatePoolChipsUI() {
         const container = document.getElementById('dice-pool-chips');
         container.innerHTML = '';
@@ -1851,6 +1938,8 @@
 
       // Listen to Engine Selection, Material, and Style events
       diceEngine.on('selectionChange', () => {
+        flushStyleChange();
+        flushBevelUI();
         updateMaterialUI();
         updateFaceStyleUI();
         updatePoolChipsUI();
@@ -2060,6 +2149,8 @@
       const randomizeMatsBtn = document.getElementById('randomize-mats-btn');
       if (randomizeMatsBtn) {
         randomizeMatsBtn.addEventListener('click', () => {
+          flushStyleChange();
+          flushBevelUI();
           const selectedDie = diceEngine.getSelectedDie();
           if (selectedDie) {
             const cfg = generateShuffledDieConfig();
@@ -2080,12 +2171,14 @@
 
       document.querySelectorAll('#bevel-switch .tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+          flushBevelUI();
           setBevelUI(parseFloat(btn.dataset.bevel));
         });
       });
 
       document.querySelectorAll('#bevel-segments-switch .tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+          flushBevelUI();
           setBevelSegmentsUI(parseInt(btn.dataset.seg, 10));
         });
       });
@@ -2117,6 +2210,7 @@
       const fontSelect = document.getElementById('font-family-select');
       if (fontSelect) {
         fontSelect.addEventListener('change', () => {
+          flushStyleChange();
           applyStyleChange({ fontFamily: fontSelect.value || null });
         });
       }
@@ -2125,156 +2219,212 @@
       const paramFontColor = document.getElementById('param-font-color');
       if (paramFontColor) {
         paramFontColor.addEventListener('input', (e) => {
-          applyStyleChange({ fontColor: e.target.value });
+          queueStyleChange({ fontColor: e.target.value });
         });
+        paramFontColor.addEventListener('change', () => flushStyleChange());
       }
       const paramFontColorAuto = document.getElementById('param-font-color-auto');
       if (paramFontColorAuto) {
         paramFontColorAuto.addEventListener('click', () => {
+          flushStyleChange();
           applyStyleChange({ fontColor: null });
         });
       }
 
       // Font Emboss Depth Slider
       const paramFontDepth = document.getElementById('param-font-emboss-depth');
+      const paramFontDepthVal = document.getElementById('param-font-depth-val');
       if (paramFontDepth) {
         paramFontDepth.addEventListener('input', (e) => {
-          applyStyleChange({ fontEmbossDepth: parseFloat(e.target.value) });
+          const val = parseFloat(e.target.value);
+          if (paramFontDepthVal) {
+            paramFontDepthVal.textContent = val > 0 ? `+${val.toFixed(1)} (Raised)` : val < 0 ? `${val.toFixed(1)} (Engraved)` : '0.0 (Flat)';
+          }
+          queueStyleChange({ fontEmbossDepth: val });
         });
+        paramFontDepth.addEventListener('change', () => flushStyleChange());
       }
 
       // Font Shadow Color & Radius
       const paramFontShadowColor = document.getElementById('param-font-shadow-color');
       if (paramFontShadowColor) {
         paramFontShadowColor.addEventListener('input', (e) => {
-          applyStyleChange({ fontShadowColor: e.target.value });
+          queueStyleChange({ fontShadowColor: e.target.value });
         });
+        paramFontShadowColor.addEventListener('change', () => flushStyleChange());
       }
       const paramFontShadowRadius = document.getElementById('param-font-shadow-radius');
       if (paramFontShadowRadius) {
         paramFontShadowRadius.addEventListener('input', (e) => {
-          applyStyleChange({ fontShadowRadius: parseFloat(e.target.value) });
+          queueStyleChange({ fontShadowRadius: parseFloat(e.target.value) });
         });
+        paramFontShadowRadius.addEventListener('change', () => flushStyleChange());
       }
 
       // Face Fill Color & None
       const paramFaceColor = document.getElementById('param-face-color');
       if (paramFaceColor) {
         paramFaceColor.addEventListener('input', (e) => {
-          applyStyleChange({ faceFillColor: e.target.value });
+          queueStyleChange({ faceFillColor: e.target.value });
         });
+        paramFaceColor.addEventListener('change', () => flushStyleChange());
       }
       const paramFaceColorNone = document.getElementById('param-face-color-none');
       if (paramFaceColorNone) {
         paramFaceColorNone.addEventListener('click', () => {
+          flushStyleChange();
           applyStyleChange({ faceFillColor: null });
         });
       }
 
       // Face Opacity
       const paramFaceOpacity = document.getElementById('param-face-opacity');
+      const paramFaceOpacityVal = document.getElementById('param-face-opacity-val');
       if (paramFaceOpacity) {
         paramFaceOpacity.addEventListener('input', (e) => {
-          applyStyleChange({ faceOpacity: parseFloat(e.target.value) });
+          const val = parseFloat(e.target.value);
+          if (paramFaceOpacityVal) paramFaceOpacityVal.textContent = val.toFixed(2);
+          queueStyleChange({ faceOpacity: val });
         });
+        paramFaceOpacity.addEventListener('change', () => flushStyleChange());
       }
 
       // Edge Color & None
       const paramEdgeColor = document.getElementById('param-edge-color');
       if (paramEdgeColor) {
         paramEdgeColor.addEventListener('input', (e) => {
-          applyStyleChange({ edgeColor: e.target.value });
+          queueStyleChange({ edgeColor: e.target.value });
         });
+        paramEdgeColor.addEventListener('change', () => flushStyleChange());
       }
       const paramEdgeColorNone = document.getElementById('param-edge-color-none');
       if (paramEdgeColorNone) {
         paramEdgeColorNone.addEventListener('click', () => {
+          flushStyleChange();
           applyStyleChange({ edgeColor: null });
         });
       }
 
       // Edge Emboss Depth (+ / -)
       const paramEdgeDepth = document.getElementById('param-edge-emboss-depth');
+      const paramEdgeDepthVal = document.getElementById('param-edge-depth-val');
       if (paramEdgeDepth) {
         paramEdgeDepth.addEventListener('input', (e) => {
-          applyStyleChange({ edgeEmbossDepth: parseFloat(e.target.value) });
+          const val = parseFloat(e.target.value);
+          if (paramEdgeDepthVal) {
+            paramEdgeDepthVal.textContent = val > 0 ? `+${val.toFixed(1)} (Outset)` : val < 0 ? `${val.toFixed(1)} (Inset)` : '0.0 (Flat)';
+          }
+          queueStyleChange({ edgeEmbossDepth: val });
         });
+        paramEdgeDepth.addEventListener('change', () => flushStyleChange());
       }
 
       // Bevel Color & Auto
       const paramBevelColor = document.getElementById('param-bevel-color');
       if (paramBevelColor) {
         paramBevelColor.addEventListener('input', (e) => {
-          applyStyleChange({ bevelColor: e.target.value });
+          queueStyleChange({ bevelColor: e.target.value });
         });
+        paramBevelColor.addEventListener('change', () => flushStyleChange());
       }
       const paramBevelColorAuto = document.getElementById('param-bevel-color-auto');
       if (paramBevelColorAuto) {
         paramBevelColorAuto.addEventListener('click', () => {
+          flushStyleChange();
           applyStyleChange({ bevelColor: null });
         });
       }
 
       // Bevel Radius Slider Listener
       const bevelRadiusSlider = document.getElementById('bevel-radius-slider');
+      const bevelRadiusVal = document.getElementById('bevel-radius-val');
       if (bevelRadiusSlider) {
         bevelRadiusSlider.addEventListener('input', (e) => {
-          setBevelUI(parseFloat(e.target.value));
+          const val = parseFloat(e.target.value);
+          if (bevelRadiusVal) bevelRadiusVal.textContent = val.toFixed(2);
+          document.querySelectorAll('#bevel-switch .tab-btn').forEach(btn => {
+            const bVal = parseFloat(btn.dataset.bevel);
+            btn.classList.toggle('active', Math.abs(bVal - val) < 0.01);
+          });
+          queueBevelUI(val);
         });
+        bevelRadiusSlider.addEventListener('change', () => flushBevelUI());
       }
 
       // PBR Roughness
       const paramRoughness = document.getElementById('param-roughness');
+      const paramRoughnessVal = document.getElementById('param-roughness-val');
       if (paramRoughness) {
         paramRoughness.addEventListener('input', (e) => {
-          applyStyleChange({ roughness: parseFloat(e.target.value) });
+          const val = parseFloat(e.target.value);
+          if (paramRoughnessVal) paramRoughnessVal.textContent = val.toFixed(2);
+          queueStyleChange({ roughness: val });
         });
+        paramRoughness.addEventListener('change', () => flushStyleChange());
       }
 
       // PBR Metalness
       const paramMetalness = document.getElementById('param-metalness');
+      const paramMetalnessVal = document.getElementById('param-metalness-val');
       if (paramMetalness) {
         paramMetalness.addEventListener('input', (e) => {
-          applyStyleChange({ metalness: parseFloat(e.target.value) });
+          const val = parseFloat(e.target.value);
+          if (paramMetalnessVal) paramMetalnessVal.textContent = val.toFixed(2);
+          queueStyleChange({ metalness: val });
         });
+        paramMetalness.addEventListener('change', () => flushStyleChange());
       }
 
       // Pearlescent Iridescence
       const paramIridescence = document.getElementById('param-iridescence');
+      const paramIridescenceVal = document.getElementById('param-iridescence-val');
       if (paramIridescence) {
         paramIridescence.addEventListener('input', (e) => {
-          applyStyleChange({ iridescence: parseFloat(e.target.value) });
+          const val = parseFloat(e.target.value);
+          if (paramIridescenceVal) paramIridescenceVal.textContent = val > 0 ? val.toFixed(2) : 'Off';
+          queueStyleChange({ iridescence: val });
         });
+        paramIridescence.addEventListener('change', () => flushStyleChange());
       }
 
       // Iridescence IOR
       const paramIridescenceIor = document.getElementById('param-iridescence-ior');
+      const paramIridescenceIorVal = document.getElementById('param-iridescence-ior-val');
       if (paramIridescenceIor) {
         paramIridescenceIor.addEventListener('input', (e) => {
-          applyStyleChange({ iridescenceIOR: parseFloat(e.target.value) });
+          const val = parseFloat(e.target.value);
+          if (paramIridescenceIorVal) paramIridescenceIorVal.textContent = val.toFixed(2);
+          queueStyleChange({ iridescenceIOR: val });
         });
+        paramIridescenceIor.addEventListener('change', () => flushStyleChange());
       }
 
       // Sheen
       const paramSheen = document.getElementById('param-sheen');
+      const paramSheenVal = document.getElementById('param-sheen-val');
       if (paramSheen) {
         paramSheen.addEventListener('input', (e) => {
-          applyStyleChange({ sheen: parseFloat(e.target.value) });
+          const val = parseFloat(e.target.value);
+          if (paramSheenVal) paramSheenVal.textContent = val.toFixed(2);
+          queueStyleChange({ sheen: val });
         });
+        paramSheen.addEventListener('change', () => flushStyleChange());
       }
 
       // Sheen Color
       const paramSheenColor = document.getElementById('param-sheen-color');
       if (paramSheenColor) {
         paramSheenColor.addEventListener('input', (e) => {
-          applyStyleChange({ sheenColor: e.target.value });
+          queueStyleChange({ sheenColor: e.target.value });
         });
+        paramSheenColor.addEventListener('change', () => flushStyleChange());
       }
 
       // Reset PBR & Pearl to Material Defaults
       const paramPbrAuto = document.getElementById('param-pbr-auto');
       if (paramPbrAuto) {
         paramPbrAuto.addEventListener('click', () => {
+          flushStyleChange();
           applyStyleChange({
             roughness: null,
             metalness: null,
@@ -2291,6 +2441,7 @@
       const edgeButtons = document.querySelectorAll('#edge-preset-row button');
       edgeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
+          flushStyleChange();
           edgeButtons.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           const edgeType = btn.dataset.edge;

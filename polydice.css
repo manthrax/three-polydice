@@ -140,24 +140,50 @@
       position: absolute;
       top: 48px;
       left: 12px;
-      width: 175px;
+      width: 178px;
+      max-height: calc(100vh - 60px);
+      overflow-y: auto;
+      overflow-x: hidden;
       display: flex;
       flex-direction: column;
       gap: 8px;
       z-index: 20;
-      background: rgba(10, 13, 18, 0.65);
+      background: rgba(10, 13, 18, 0.72);
       border: 1px solid rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-radius: 5px;
-      padding: 8px 10px;
+      padding: 8px 7px 8px 10px;
       box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
-      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1), height 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      scrollbar-width: thin;
+      scrollbar-color: rgba(97, 175, 239, 0.35) transparent;
+    }
+
+    /* Minimally styled trim scrollbar */
+    #ui-panel::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    #ui-panel::-webkit-scrollbar-track {
+      background: transparent;
+      margin: 4px 0;
+    }
+
+    #ui-panel::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 4px;
+      transition: background 0.15s ease;
+    }
+
+    #ui-panel::-webkit-scrollbar-thumb:hover {
+      background: var(--accent, #61afef);
     }
 
     #ui-panel.collapsed {
       width: 32px;
       height: 32px;
+      max-height: 32px;
       padding: 0;
       overflow: hidden;
       border-radius: 4px;
