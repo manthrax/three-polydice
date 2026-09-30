@@ -380,6 +380,7 @@
 
   <script type="module">
     import * as THREE from 'three';
+    import { ConvexHull } from 'three/addons/math/ConvexHull.js';
     import { PolyDice } from './polydice.js';
     import { setupDemoViewport } from './demo.js';
 
@@ -408,6 +409,8 @@
     // 3. PolyDice Instance
     const diceEngine = new PolyDice({
       THREE,
+      ConvexHull,
+      Ammo: window.Ammo,
       scene,
       camera,
       dicePool: poolTypes,

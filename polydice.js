@@ -1682,6 +1682,18 @@ export class PolyDice {
   // =========================================================================
 
   async init() {
+    if (!this.ConvexHull) {
+      try {
+        const mod = await import('three/addons/math/ConvexHull.js');
+        if (mod && mod.ConvexHull) {
+          this.ConvexHull = mod.ConvexHull;
+          _bindPolyDiceContext(this.THREE, this.ConvexHull);
+        }
+      } catch (e) {
+        // dynamic import fallback not available in environment
+      }
+    }
+
     if (typeof this.Ammo === 'function') {
       this.AmmoLib = await this.Ammo();
     } else if (this.Ammo) {
