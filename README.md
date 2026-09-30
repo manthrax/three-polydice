@@ -1,5 +1,7 @@
 # 🎲 PolyDice — Procedural 3D Polyhedral Dice Physics & Simulator
 
+**[🌐 Launch Interactive Online Demo](https://manthrax.github.io/three-polydice/polydice.html)**
+
 A high-performance, 100% self-contained JavaScript 3D polyhedral dice simulation library powered by **Three.js**, **Ammo.js (Bullet Physics WebAssembly)**, and the **Web Audio API**.
 
 PolyDice synthesizes all 3D geometries, multi-segment fillet chamfers, UV unwrapping, and engraved normal maps **entirely procedurally** at runtime—requiring **zero** external 3D models (`.obj`, `.gltf`) or static texture image assets.
