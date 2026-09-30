@@ -57,6 +57,11 @@ export function createMoodyEnvironment(renderer) {
 
   const envTexture = new THREE.CanvasTexture(c);
   envTexture.mapping = THREE.EquirectangularReflectionMapping;
+  if (THREE.SRGBColorSpace) {
+    envTexture.colorSpace = THREE.SRGBColorSpace;
+  } else if (THREE.sRGBEncoding) {
+    envTexture.encoding = THREE.sRGBEncoding;
+  }
 
   const envMap = pmremGen.fromEquirectangular(envTexture).texture;
   envTexture.dispose();
@@ -116,6 +121,11 @@ export function setupDemoViewport(options = {}) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
+  if (THREE.SRGBColorSpace) {
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+  } else if (THREE.sRGBEncoding) {
+    renderer.outputEncoding = THREE.sRGBEncoding;
+  }
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
 

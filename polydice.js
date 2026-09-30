@@ -1275,12 +1275,22 @@ function createDiceTextures(numFaces, cols, rows, faceInfos, isInspector = false
   const diffuseMap = new THREE.CanvasTexture(diffCanvas);
   diffuseMap.wrapS = THREE.ClampToEdgeWrapping;
   diffuseMap.wrapT = THREE.ClampToEdgeWrapping;
+  if (THREE.SRGBColorSpace) {
+    diffuseMap.colorSpace = THREE.SRGBColorSpace;
+  } else if (THREE.sRGBEncoding) {
+    diffuseMap.encoding = THREE.sRGBEncoding;
+  }
   diffuseMap.generateMipmaps = true;
   diffuseMap.needsUpdate = true;
 
   const normalMap = new THREE.CanvasTexture(normCanvas);
   normalMap.wrapS = THREE.ClampToEdgeWrapping;
   normalMap.wrapT = THREE.ClampToEdgeWrapping;
+  if (THREE.NoColorSpace) {
+    normalMap.colorSpace = THREE.NoColorSpace;
+  } else if (THREE.LinearEncoding) {
+    normalMap.encoding = THREE.LinearEncoding;
+  }
   normalMap.generateMipmaps = true;
   normalMap.needsUpdate = true;
 
@@ -3240,6 +3250,9 @@ export class PolyDice {
     bCtx.fillStyle = bGrad;
     bCtx.fillRect(0, 0, 256, 256);
     const backTex = new this.THREE.CanvasTexture(backCanvas);
+    if (this.THREE.SRGBColorSpace) {
+      backTex.colorSpace = this.THREE.SRGBColorSpace;
+    }
     const backGeo = new this.THREE.PlaneGeometry(35, 22);
     const backMat = new this.THREE.MeshBasicMaterial({ map: backTex });
     const backPlane = new this.THREE.Mesh(backGeo, backMat);
