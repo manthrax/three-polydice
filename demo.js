@@ -127,14 +127,21 @@ export function setupDemoViewport(options = {}) {
   scene.add(ambientLight);
 
   const keyLight = new THREE.DirectionalLight(0xfff5ea, 2.2);
-  keyLight.position.set(5, 12, 6);
+  keyLight.position.set(6, 18, 8);
   keyLight.castShadow = true;
-  keyLight.shadow.mapSize.width = 1024;
-  keyLight.shadow.mapSize.height = 1024;
-  keyLight.shadow.camera.near = 0.5;
-  keyLight.shadow.camera.far = 30;
-  keyLight.shadow.bias = -0.0005;
+  keyLight.shadow.mapSize.width = 2048;
+  keyLight.shadow.mapSize.height = 2048;
+  keyLight.shadow.camera.near = 1.0;
+  keyLight.shadow.camera.far = 40.0;
+  keyLight.shadow.camera.left = -14.0;
+  keyLight.shadow.camera.right = 14.0;
+  keyLight.shadow.camera.top = 18.0;
+  keyLight.shadow.camera.bottom = -14.0;
+  keyLight.shadow.bias = -0.0003;
+  keyLight.shadow.normalBias = 0.035;
   scene.add(keyLight);
+  scene.add(keyLight.target);
+  keyLight.target.position.set(0, 0, 0);
 
   const rimLight = new THREE.DirectionalLight(0xaad4ff, 1.6);
   rimLight.position.set(-6, 8, -6);
