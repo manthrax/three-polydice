@@ -1,6 +1,6 @@
 # 🎲 PolyDice — Procedural 3D Polyhedral Dice Physics & Simulator
 
-**[🌐 Launch Interactive Online Demo](https://manthrax.github.io/three-polydice/polydice.html)**
+**[🌐 Launch Interactive Online Demo](https://manthrax.github.io/three-polydice/polydice.html)** &bull; **[📷 2D Game Snapshot Demo](https://manthrax.github.io/three-polydice/demoHtml.html)** &bull; **[⚡ Server Sync Demo](https://manthrax.github.io/three-polydice/demoTargetRoll.html)**
 
 A high-performance, 100% self-contained JavaScript 3D polyhedral dice simulation library powered by **Three.js**, **Ammo.js (Bullet Physics WebAssembly)**, and the **Web Audio API**.
 
@@ -116,7 +116,10 @@ python -m http.server 8080
 npx serve .
 ```
 
-Open `http://localhost:8080/polydice.html` in any WebGL-capable browser.
+Open any of the included demos in a WebGL-capable browser:
+- `http://localhost:8080/polydice.html` — Full 3D interactive simulator, visual configurator & inspector.
+- `http://localhost:8080/demoHtml.html` — 2D web game integration using offscreen snapshot generation (5d6, 5 distinct colors).
+- `http://localhost:8080/demoTargetRoll.html` — Multi-client deterministic server roll sync with dual 3D viewports.
 
 ---
 

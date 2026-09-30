@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2D Web Game Simulator — PolyDice Snapshot Demo</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="polydice.css">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      min-height: 100vh;
+      overflow-y: auto;
+      background: radial-gradient(circle at 50% 20%, #151c28 0%, #0a0d14 75%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #offscreen-container {
+      position: fixed;
+      left: -9999px;
+      top: -9999px;
+      width: 1024px;
+      height: 576px;
+      visibility: hidden;
+      pointer-events: none;
+      opacity: 0;
+      z-index: -100;
+    }
+
+    .game-container {
+      width: 100%;
+      max-width: 820px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header.demo-header {
+      position: static;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      padding: 10px 18px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .info-banner {
+      background: rgba(14, 18, 26, 0.7);
+      border-left: 3px solid var(--accent);
+      border-radius: 2px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #abb2bf;
+      line-height: 1.5;
+    }
+
+    .game-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+    }
+
+    .snapshot-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      max-height: 380px;
+      background: #090c12;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8), 0 6px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .snapshot-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      transition: opacity 0.25s ease;
+    }
+
+    .snapshot-loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(9, 12, 18, 0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .snapshot-loading-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(97, 175, 239, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .result-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(10, 13, 19, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 3px;
+      padding: 10px 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .total-box {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .total-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .total-val {
+      font-family: 'Cinzel', serif;
+      font-size: 30px;
+      font-weight: 800;
+      color: var(--accent-gold);
+      text-shadow: 0 0 14px rgba(229, 192, 123, 0.5);
+    }
+
+    .dice-chips-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .die-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .actions-row {
+      width: 100%;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .game-roll-btn {
+      background: linear-gradient(180deg, #1e2838 0%, #111722 100%);
+      border: 1px solid var(--accent);
+      color: #fff;
+      padding: 12px 36px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 14px rgba(97, 175, 239, 0.25);
+      transition: all 0.18s;
+      user-select: none;
+    }
+
+    .game-roll-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.65), 0 0 22px rgba(97, 175, 239, 0.45);
+      border-color: #fff;
+    }
+
+    .game-roll-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .target-bar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(10, 13, 18, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 3px;
+      padding: 8px 12px;
+      font-size: 11.5px;
+    }
+
+    .history-card {
+      width: 100%;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      padding: 14px 18px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+    }
+
+    .history-table th,
+    .history-table td {
+      padding: 6px 10px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+  </style>
+
+  <!-- Ammo.js Physics Engine -->
+  <script src="https://cdn.jsdelivr.net/gh/kripken/ammo.js@main/builds/ammo.js"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.186.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.186.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body>
+
+  <!-- Offscreen 3D Canvas -->
+  <div id="offscreen-container">
+    <canvas id="offscreen-canvas" width="1024" height="576"></canvas>
+  </div>
+
+  <div class="game-container">
+    <!-- Header -->
+    <header class="demo-header">
+      <div class="brand">
+        <span class="brand-icon">🎲</span>
+        <div class="brand-title">PolyDice 2D Game Demo</div>
+        <span class="brand-badge">SNAPSHOT UTILITY</span>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <a href="polydice.html" class="tab-btn" style="text-decoration:none; padding:4px 10px;">Full 3D App ↗</a>
+        <a href="demoTargetRoll.html" class="tab-btn" style="text-decoration:none; padding:4px 10px;">Server Sync Demo ↗</a>
+      </div>
+    </header>
+
+    <!-- Info Banner -->
+    <div class="info-banner">
+      <strong>Zero-WebGL 2D Game Integration:</strong> This demo simulates a 2D web game that displays only a standard <code>&lt;img&gt;</code> element.
+      <strong>PolyDice</strong> executes the 3D physics and acoustic collision synthesis entirely off-screen via <code>demo.js</code>, then renders an anti-aliased snapshot card with <strong>5 distinct colored d6 dice</strong>.
+    </div>
+
+    <!-- Main Game Card -->
+    <div class="game-card">
+      <div class="snapshot-frame">
+        <img id="roll-snapshot-img" alt="5d6 Dice Roll Snapshot" src="" style="opacity: 0;" />
+        <div class="snapshot-loading-overlay" id="loading-overlay">
+          <div class="spinner"></div>
+          <div style="font-size: 13px; font-weight: 600; color: #fff;">Rolling 5d6 Physics in Background...</div>
+          <div style="font-size: 10.5px; color: var(--text-muted);">Solving Bullet WebAssembly rigid bodies</div>
+        </div>
+      </div>
+
+      <!-- Result Bar -->
+      <div class="result-bar">
+        <div class="total-box">
+          <span class="total-label">Roll Total</span>
+          <span class="total-val" id="total-val">—</span>
+        </div>
+        <div class="dice-chips-row" id="dice-chips-row">
+          <div class="die-chip"><span class="mat-swatch" style="background:#ec0000;"></span> Ruby: —</div>
+          <div class="die-chip"><span class="mat-swatch" style="background:#1ac000;"></span> Emerald: —</div>
+          <div class="die-chip"><span class="mat-swatch" style="background:#033eff;"></span> Sapphire: —</div>
+          <div class="die-chip"><span class="mat-swatch" style="background:#f99500;"></span> Gold: —</div>
+          <div class="die-chip"><span class="mat-swatch" style="background:#131313; border: 1px solid #444;"></span> Obsidian: —</div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions-row">
+        <button class="game-roll-btn" id="roll-action-btn">
+          <span>🎲</span>
+          <span>ROLL 5D6</span>
+        </button>
+        <button class="small-btn" id="sound-btn" style="flex:none; padding: 12px 16px; font-size: 12px;">
+          <span id="sound-icon">🔊</span>
+          <span id="sound-text">Sound ON</span>
+        </button>
+      </div>
+
+      <!-- Optional Target String Bar -->
+      <div class="target-bar">
+        <label for="target-input" style="color: var(--text-muted); font-weight: 600;">Server Target:</label>
+        <input type="text" id="target-input" class="small-btn" style="flex:1; text-align:left; background:rgba(0,0,0,0.5); color:#fff; font-family:monospace; padding:5px 8px;" placeholder="Optional: e.g. 6, 6, 6, 6, 6 or 1, 2, 3, 4, 5" />
+        <button class="small-btn" data-preset="6, 6, 6, 6, 6" style="flex:none; padding:4px 8px;">Yahtzee (All 6s)</button>
+        <button class="small-btn" data-preset="1, 2, 3, 4, 5" style="flex:none; padding:4px 8px;">Straight</button>
+        <button class="small-btn" data-preset="clear" style="flex:none; padding:4px 8px;">Random</button>
+      </div>
+    </div>
+
+    <!-- Roll History -->
+    <div class="history-card">
+      <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between;">
+        <span>Recent Rolls</span>
+        <span id="roll-count-badge" style="color: var(--accent); font-weight: 600;">0 rolls</span>
+      </div>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th style="color: var(--text-muted);">#</th>
+            <th style="color: var(--text-muted);">Total</th>
+            <th style="color: var(--text-muted);">Breakdown (Ruby, Emerald, Sapphire, Gold, Obsidian)</th>
+            <th style="color: var(--text-muted);">Type</th>
+            <th style="color: var(--text-muted);">Timestamp</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <tr>
+            <td colspan="5" style="color: var(--text-muted); text-align: center; padding: 14px;">No rolls yet. Click ROLL 5D6 to cast your first roll!</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { PolyDice } from './polydice.js';
+    import { setupDemoViewport } from './demo.js';
+
+    // 1. Offscreen Three.js Setup via demo.js
+    const offscreenCanvas = document.getElementById('offscreen-canvas');
+    const { scene, camera, renderer, audioListener } = setupDemoViewport({
+      canvas: offscreenCanvas,
+      width: 1024,
+      height: 576,
+      enableControls: false,
+      autoResize: false
+    });
+
+    // 2. 5 Distinct Dice Materials
+    const DICE_CONFIG = [
+      { type: 'd6', mat: 'ruby', name: 'Ruby', color: '#ec0000' },
+      { type: 'd6', mat: 'emerald', name: 'Emerald', color: '#1ac000' },
+      { type: 'd6', mat: 'sapphire', name: 'Sapphire', color: '#033eff' },
+      { type: 'd6', mat: 'gold', name: 'Gold', color: '#f99500' },
+      { type: 'd6', mat: 'obsidian', name: 'Obsidian', color: '#131313' }
+    ];
+
+    const poolTypes = DICE_CONFIG.map(d => d.type);
+    const poolMaterials = DICE_CONFIG.map(d => d.mat);
+
+    // 3. PolyDice Instance
+    const diceEngine = new PolyDice({
+      THREE,
+      scene,
+      camera,
+      dicePool: poolTypes,
+      initialMaterials: poolMaterials,
+      trayBounds: { minX: -5.0, maxX: 5.0, minZ: -5.0, maxZ: 5.0 },
+      audio: true,
+      audioListener,
+      defaultBevel: 0.20,
+      defaultBevelSegments: 4
+    });
+
+    diceEngine.renderer = renderer;
+    diceEngine.domElement = renderer.domElement;
+    diceEngine.camera = camera;
+
+    const visualTray = diceEngine.createDefaultVisualTray();
+    visualTray.visible = true;
+
+    // UI Elements
+    const snapshotImg = document.getElementById('roll-snapshot-img');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const rollBtn = document.getElementById('roll-action-btn');
+    const soundBtn = document.getElementById('sound-btn');
+    const soundIcon = document.getElementById('sound-icon');
+    const soundText = document.getElementById('sound-text');
+    const totalValEl = document.getElementById('total-val');
+    const diceChipsRow = document.getElementById('dice-chips-row');
+    const targetInput = document.getElementById('target-input');
+    const historyBody = document.getElementById('history-body');
+    const rollCountBadge = document.getElementById('roll-count-badge');
+
+    let rollCount = 0;
+    const history = [];
+
+    // Background Render / Physics loop
+    let lastTime = performance.now();
+    function animate() {
+      requestAnimationFrame(animate);
+      const now = performance.now();
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+
+      diceEngine.update(dt);
+      renderer.render(scene, camera);
+    }
+
+    // Capture Snapshot & Update View
+    function updateSnapshotView(result) {
+      const snapshotCanvas = diceEngine.generateSnapshot(renderer, camera);
+      if (snapshotCanvas) {
+        snapshotImg.src = snapshotCanvas.toDataURL('image/png');
+        snapshotImg.style.opacity = '1';
+      }
+
+      totalValEl.textContent = result.total;
+
+      // Update Individual Die Chips
+      diceChipsRow.innerHTML = '';
+      result.dice.forEach((dieResult, idx) => {
+        const cfg = DICE_CONFIG[idx] || { name: `Die #${idx + 1}`, color: '#fff' };
+        const chip = document.createElement('div');
+        chip.className = 'die-chip';
+        const borderStyle = cfg.color === '#131313' ? 'border: 1px solid #555;' : '';
+        chip.innerHTML = `
+          <span class="mat-swatch" style="background:${cfg.color}; ${borderStyle}"></span>
+          <span>${cfg.name}: <strong style="color:var(--accent-gold); font-size:12.5px;">${dieResult.value}</strong></span>
+        `;
+        diceChipsRow.appendChild(chip);
+      });
+
+      // Add to History
+      rollCount++;
+      rollCountBadge.textContent = `${rollCount} roll${rollCount > 1 ? 's' : ''}`;
+
+      const isTarget = targetInput.value.trim() !== '';
+      const breakdown = result.dice.map(d => d.value).join(', ');
+      history.unshift({
+        id: rollCount,
+        total: result.total,
+        breakdown,
+        type: isTarget ? '🎯 Predetermined' : '🎲 Random',
+        time: new Date().toLocaleTimeString()
+      });
+
+      if (history.length > 8) history.pop();
+
+      historyBody.innerHTML = history.map(h => `
+        <tr>
+          <td style="color: var(--text-muted); font-family: monospace;">#${h.id}</td>
+          <td><strong style="color: var(--accent-gold); font-size: 13px;">${h.total}</strong></td>
+          <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">[ ${h.breakdown} ]</td>
+          <td><span style="color: ${h.type.includes('🎯') ? '#ffab5e' : 'var(--accent)'}; font-size: 10px; font-weight: 600;">${h.type}</span></td>
+          <td style="color: var(--text-muted); font-size: 10.5px;">${h.time}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Engine Event Listeners
+    diceEngine.on('rollStart', () => {
+      rollBtn.disabled = true;
+      loadingOverlay.classList.add('active');
+    });
+
+    diceEngine.on('rollComplete', (result) => {
+      loadingOverlay.classList.remove('active');
+      rollBtn.disabled = false;
+      updateSnapshotView(result);
+    });
+
+    function executeRoll() {
+      if (diceEngine.isRolling()) return;
+
+      const targetVal = targetInput.value.trim();
+      if (targetVal) {
+        const parsed = diceEngine.parseTargetRollString(targetVal);
+        if (parsed) {
+          diceEngine.rollPredeterminedDice(poolTypes, parsed.targets, 1.0);
+          return;
+        }
+      }
+
+      diceEngine.roll({ power: 1.0 });
+    }
+
+    rollBtn.addEventListener('click', executeRoll);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !diceEngine.isRolling()) {
+        const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+        if (tag !== 'input') {
+          e.preventDefault();
+          executeRoll();
+        }
+      }
+    });
+
+    soundBtn.addEventListener('click', () => {
+      const isEnabled = diceEngine.isSoundEnabled();
+      diceEngine.setSoundEnabled(!isEnabled);
+      soundBtn.classList.toggle('muted', isEnabled);
+      soundIcon.textContent = isEnabled ? '🔇' : '🔊';
+      soundText.textContent = isEnabled ? 'Sound OFF' : 'Sound ON';
+    });
+
+    document.querySelectorAll('[data-preset]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const preset = btn.dataset.preset;
+        targetInput.value = (preset === 'clear') ? '' : preset;
+        executeRoll();
+      });
+    });
+
+    targetInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        executeRoll();
+      }
+    });
+
+    async function init() {
+      await diceEngine.init();
+      animate();
+      executeRoll();
+    }
+
+    init();
+  </script>
+</body>
+
+</html>
