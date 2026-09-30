@@ -228,18 +228,109 @@
       cursor: not-allowed;
       transform: none;
       box-shadow: none;
+    }    .loadout-bar {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(10, 13, 18, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 12px 14px;
+      box-sizing: border-box;
     }
 
-    .target-bar {
+    .loadout-input-row {
       width: 100%;
       display: flex;
       align-items: center;
-      gap: 8px;
-      background: rgba(10, 13, 18, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 3px;
-      padding: 8px 12px;
+      gap: 10px;
+    }
+
+    .loadout-label {
+      color: var(--text-muted);
       font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .loadout-input {
+      flex: 1;
+      min-width: 0;
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 3px;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 7px 12px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .loadout-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px rgba(97, 175, 239, 0.3);
+    }
+
+    .loadout-hint {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .preset-chips-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .preset-chip-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      color: #cbd2d9;
+      font-family: inherit;
+      font-size: 11px;
+      padding: 4px 9px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .preset-chip-btn:hover {
+      background: rgba(97, 175, 239, 0.15);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .preset-chip-btn.active {
+      background: rgba(97, 175, 239, 0.22);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 8px rgba(97, 175, 239, 0.3);
+    }
+
+    .die-type-tag {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 2px;
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--accent);
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
     }
 
     .history-card {
@@ -298,18 +389,18 @@
 
     <!-- Info Banner -->
     <div class="info-banner">
-      <strong>Zero-WebGL 2D Game Integration:</strong> This demo simulates a 2D web game that displays only a standard <code>&lt;img&gt;</code> element.
-      <strong>PolyDice</strong> executes the 3D physics and acoustic collision synthesis entirely off-screen via <code>demo.js</code>, then renders an anti-aliased snapshot card with <strong>5 distinct colored d6 dice</strong>.
+      <strong>Zero-WebGL 2D Game Integration:</strong> This demo simulates a lightweight 2D web game that displays only a standard <code>&lt;img&gt;</code> element.
+      <strong>PolyDice</strong> executes procedural geometry and acoustic collision synthesis entirely off-screen via <code>demo.js</code>, rendering an anti-aliased snapshot card with <strong>customizable dice loadouts and finishes</strong>.
     </div>
 
     <!-- Main Game Card -->
     <div class="game-card">
       <div class="snapshot-frame">
-        <img id="roll-snapshot-img" alt="5d6 Dice Roll Snapshot" src="" style="opacity: 0;" />
+        <img id="roll-snapshot-img" alt="Dice Roll Snapshot" src="" style="opacity: 0;" />
         <div class="snapshot-loading-overlay" id="loading-overlay">
           <div class="spinner"></div>
-          <div style="font-size: 13px; font-weight: 600; color: #fff;">Rolling 5d6 Physics in Background...</div>
-          <div style="font-size: 10.5px; color: var(--text-muted);">Solving Bullet WebAssembly rigid bodies</div>
+          <div style="font-size: 13px; font-weight: 600; color: #fff;">Rendering Snapshot in Background...</div>
+          <div style="font-size: 10.5px; color: var(--text-muted);">Solving optical face alignment & procedural lighting</div>
         </div>
       </div>
 
@@ -320,11 +411,7 @@
           <span class="total-val" id="total-val">—</span>
         </div>
         <div class="dice-chips-row" id="dice-chips-row">
-          <div class="die-chip"><span class="mat-swatch" style="background:#ec0000;"></span> Ruby: —</div>
-          <div class="die-chip"><span class="mat-swatch" style="background:#1ac000;"></span> Emerald: —</div>
-          <div class="die-chip"><span class="mat-swatch" style="background:#033eff;"></span> Sapphire: —</div>
-          <div class="die-chip"><span class="mat-swatch" style="background:#f99500;"></span> Gold: —</div>
-          <div class="die-chip"><span class="mat-swatch" style="background:#131313; border: 1px solid #444;"></span> Obsidian: —</div>
+          <!-- Dynamically populated per die -->
         </div>
       </div>
 
@@ -332,7 +419,7 @@
       <div class="actions-row">
         <button class="game-roll-btn" id="roll-action-btn">
           <span>🎲</span>
-          <span>ROLL 5D6</span>
+          <span id="roll-btn-label">ROLL 5D6</span>
         </button>
         <button class="small-btn" id="sound-btn" style="flex:none; padding: 12px 16px; font-size: 12px;">
           <span id="sound-icon">🔊</span>
@@ -340,13 +427,35 @@
         </button>
       </div>
 
-      <!-- Optional Target String Bar -->
-      <div class="target-bar">
-        <label for="target-input" style="color: var(--text-muted); font-weight: 600;">Server Target:</label>
-        <input type="text" id="target-input" class="small-btn" style="flex:1; text-align:left; background:rgba(0,0,0,0.5); color:#fff; font-family:monospace; padding:5px 8px;" placeholder="Optional: e.g. 6, 6, 6, 6, 6 or 1, 2, 3, 4, 5" />
-        <button class="small-btn" data-preset="6, 6, 6, 6, 6" style="flex:none; padding:4px 8px;">Yahtzee (All 6s)</button>
-        <button class="small-btn" data-preset="1, 2, 3, 4, 5" style="flex:none; padding:4px 8px;">Straight</button>
-        <button class="small-btn" data-preset="clear" style="flex:none; padding:4px 8px;">Random</button>
+      <!-- Editable Dice Loadout & Presets Bar -->
+      <div class="loadout-bar">
+        <div class="loadout-input-row">
+          <label for="loadout-input" class="loadout-label">
+            <span>🎲</span>
+            <span>Dice Loadout:</span>
+          </label>
+          <input
+            type="text"
+            id="loadout-input"
+            class="loadout-input"
+            value="5d6"
+            placeholder="e.g. 5d6, 2d20; 2d6, 4d6: 6,6,5,5, d100: 77..."
+            spellcheck="false"
+            autocomplete="off"
+          />
+        </div>
+        <div class="loadout-hint">
+          <div class="preset-chips-row">
+            <span style="font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-right: 2px;">Presets:</span>
+            <button class="preset-chip-btn active" data-loadout="5d6">5d6 (Yahtzee)</button>
+            <button class="preset-chip-btn" data-loadout="5d6: 6, 6, 6, 6, 6">All 6s (Target)</button>
+            <button class="preset-chip-btn" data-loadout="2d20; 2d6">RPG Attack (2d20 + 2d6)</button>
+            <button class="preset-chip-btn" data-loadout="4d6: 6, 6, 5, 5">Stat Roll (4d6: 6,6,5,5)</button>
+            <button class="preset-chip-btn" data-loadout="d4, d6, d8, d10, d12, d20">Full Poly Set</button>
+            <button class="preset-chip-btn" data-loadout="d100: 77">Percentile (d100: 77)</button>
+          </div>
+          <span style="font-size: 10px; color: var(--text-muted); opacity: 0.8;">Press Enter or spacebar to roll</span>
+        </div>
       </div>
     </div>
 
@@ -361,14 +470,14 @@
           <tr>
             <th style="color: var(--text-muted);">#</th>
             <th style="color: var(--text-muted);">Total</th>
-            <th style="color: var(--text-muted);">Breakdown (Ruby, Emerald, Sapphire, Gold, Obsidian)</th>
+            <th style="color: var(--text-muted);">Loadout & Breakdown</th>
             <th style="color: var(--text-muted);">Type</th>
             <th style="color: var(--text-muted);">Timestamp</th>
           </tr>
         </thead>
         <tbody id="history-body">
           <tr>
-            <td colspan="5" style="color: var(--text-muted); text-align: center; padding: 14px;">No rolls yet. Click ROLL 5D6 to cast your first roll!</td>
+            <td colspan="5" style="color: var(--text-muted); text-align: center; padding: 14px;">No rolls yet. Click ROLL to cast your first roll!</td>
           </tr>
         </tbody>
       </table>
@@ -391,17 +500,19 @@
       autoResize: false
     });
 
-    // 2. 5 Distinct Dice Materials
-    const DICE_CONFIG = [
-      { type: 'd6', mat: 'ruby', name: 'Ruby', color: '#ec0000' },
-      { type: 'd6', mat: 'emerald', name: 'Emerald', color: '#1ac000' },
-      { type: 'd6', mat: 'sapphire', name: 'Sapphire', color: '#033eff' },
-      { type: 'd6', mat: 'gold', name: 'Gold', color: '#f99500' },
-      { type: 'd6', mat: 'obsidian', name: 'Obsidian', color: '#131313' }
+    // 2. Curated Material Palette for visual variety
+    const MATERIAL_PALETTE = [
+      { id: 'ruby', name: 'Ruby', color: '#ec0000', border: 'rgba(236, 0, 0, 0.5)' },
+      { id: 'emerald', name: 'Emerald', color: '#1ac000', border: 'rgba(26, 192, 0, 0.5)' },
+      { id: 'sapphire', name: 'Sapphire', color: '#033eff', border: 'rgba(3, 62, 255, 0.5)' },
+      { id: 'gold', name: 'Gold', color: '#f99500', border: 'rgba(249, 149, 0, 0.5)' },
+      { id: 'obsidian', name: 'Obsidian', color: '#181b22', border: 'rgba(255, 255, 255, 0.25)' },
+      { id: 'pearl', name: 'Pearl', color: '#f0ece1', border: 'rgba(240, 236, 225, 0.45)' },
+      { id: 'silver', name: 'Silver', color: '#c8d0da', border: 'rgba(200, 208, 218, 0.45)' }
     ];
 
-    const poolTypes = DICE_CONFIG.map(d => d.type);
-    const poolMaterials = DICE_CONFIG.map(d => d.mat);
+    const initialDice = ['d6', 'd6', 'd6', 'd6', 'd6'];
+    const initialMaterials = initialDice.map((_, i) => MATERIAL_PALETTE[i % MATERIAL_PALETTE.length].id);
 
     // 3. PolyDice Instance (Visual & Snapshot Mode - No Ammo physics required!)
     const diceEngine = new PolyDice({
@@ -409,8 +520,8 @@
       ConvexHull,
       scene,
       camera,
-      dicePool: poolTypes,
-      initialMaterials: poolMaterials,
+      dicePool: initialDice,
+      initialMaterials: initialMaterials,
       trayBounds: { minX: -5.0, maxX: 5.0, minZ: -5.0, maxZ: 5.0 },
       audio: true,
       audioListener,
@@ -426,20 +537,65 @@
     const snapshotImg = document.getElementById('roll-snapshot-img');
     const loadingOverlay = document.getElementById('loading-overlay');
     const rollBtn = document.getElementById('roll-action-btn');
+    const rollBtnLabel = document.getElementById('roll-btn-label');
     const soundBtn = document.getElementById('sound-btn');
     const soundIcon = document.getElementById('sound-icon');
     const soundText = document.getElementById('sound-text');
     const totalValEl = document.getElementById('total-val');
     const diceChipsRow = document.getElementById('dice-chips-row');
-    const targetInput = document.getElementById('target-input');
+    const loadoutInput = document.getElementById('loadout-input');
     const historyBody = document.getElementById('history-body');
     const rollCountBadge = document.getElementById('roll-count-badge');
+    const presetBtns = document.querySelectorAll('.preset-chip-btn');
 
     let rollCount = 0;
     const history = [];
 
+    // Helper: Parse loadout string with fallback and normalizations
+    function parseLoadout(rawStr) {
+      const cleanStr = (rawStr || '').trim().replace(/\+/g, ' ');
+      if (!cleanStr) {
+        return { dice: ['d6', 'd6', 'd6', 'd6', 'd6'], targets: null, isTarget: false };
+      }
+      const parsed = diceEngine.parseTargetRollString(cleanStr);
+      if (parsed && parsed.dice && parsed.dice.length > 0) {
+        const hasTargets = parsed.targets && parsed.targets.some(t => t != null);
+        return { dice: parsed.dice, targets: hasTargets ? parsed.targets : null, isTarget: hasTargets };
+      }
+      return { dice: ['d6', 'd6', 'd6', 'd6', 'd6'], targets: null, isTarget: false };
+    }
+
+    // Helper: Update Roll button label dynamically
+    function updateRollButtonLabel(dice) {
+      if (!dice || dice.length === 0) {
+        rollBtnLabel.textContent = 'ROLL DICE';
+        return;
+      }
+      const counts = {};
+      dice.forEach(d => { counts[d] = (counts[d] || 0) + 1; });
+      const entries = Object.entries(counts);
+      if (entries.length <= 2) {
+        rollBtnLabel.textContent = 'ROLL ' + entries.map(([type, cnt]) => `${cnt}${type.toUpperCase()}`).join(' + ');
+      } else {
+        rollBtnLabel.textContent = `ROLL ${dice.length} DICE`;
+      }
+    }
+
+    // Helper: Update active preset chip highlight
+    function updateActivePreset(currentVal) {
+      const trimmed = (currentVal || '').trim().toLowerCase();
+      presetBtns.forEach(btn => {
+        const pVal = (btn.dataset.loadout || '').trim().toLowerCase();
+        if (pVal === trimmed) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
     // Capture Snapshot & Update View
-    function updateSnapshotView(result) {
+    function updateSnapshotView(result, currentLoadout, isTarget) {
       if (result.snapshotDataUrl) {
         snapshotImg.src = result.snapshotDataUrl;
         snapshotImg.style.opacity = '1';
@@ -456,13 +612,15 @@
       // Update Individual Die Chips
       diceChipsRow.innerHTML = '';
       result.dice.forEach((dieResult, idx) => {
-        const cfg = DICE_CONFIG[idx] || { name: `Die #${idx + 1}`, color: '#fff' };
+        const pal = MATERIAL_PALETTE[idx % MATERIAL_PALETTE.length];
         const chip = document.createElement('div');
         chip.className = 'die-chip';
-        const borderStyle = cfg.color === '#131313' ? 'border: 1px solid #555;' : '';
+        const borderStyle = pal.border ? `border: 1px solid ${pal.border};` : '';
+        const typeTag = dieResult.type ? dieResult.type.toUpperCase() : 'DIE';
         chip.innerHTML = `
-          <span class="mat-swatch" style="background:${cfg.color}; ${borderStyle}"></span>
-          <span>${cfg.name}: <strong style="color:var(--accent-gold); font-size:12.5px;">${dieResult.value}</strong></span>
+          <span class="die-type-tag">${typeTag}</span>
+          <span class="mat-swatch" style="background:${pal.color}; ${borderStyle}"></span>
+          <span>${pal.name}: <strong style="color:var(--accent-gold); font-size:12.5px;">${dieResult.value}</strong></span>
         `;
         diceChipsRow.appendChild(chip);
       });
@@ -471,11 +629,11 @@
       rollCount++;
       rollCountBadge.textContent = `${rollCount} roll${rollCount > 1 ? 's' : ''}`;
 
-      const isTarget = targetInput.value.trim() !== '';
-      const breakdown = result.dice.map(d => d.value).join(', ');
+      const breakdown = result.summary || result.dice.map(d => `${d.type || 'd6'}:${d.value}`).join(', ');
       history.unshift({
         id: rollCount,
         total: result.total,
+        loadout: currentLoadout || '5d6',
         breakdown,
         type: isTarget ? '🎯 Predetermined' : '🎲 Random',
         time: new Date().toLocaleTimeString()
@@ -487,27 +645,23 @@
         <tr>
           <td style="color: var(--text-muted); font-family: monospace;">#${h.id}</td>
           <td><strong style="color: var(--accent-gold); font-size: 13px;">${h.total}</strong></td>
-          <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">[ ${h.breakdown} ]</td>
+          <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+            <span style="color: #61afef; font-weight: 600;">${h.loadout}</span>
+            <span style="color: var(--text-muted); margin-left: 6px;">[ ${h.breakdown} ]</span>
+          </td>
           <td><span style="color: ${h.type.includes('🎯') ? '#ffab5e' : 'var(--accent)'}; font-size: 10px; font-weight: 600;">${h.type}</span></td>
           <td style="color: var(--text-muted); font-size: 10.5px;">${h.time}</td>
         </tr>
       `).join('');
     }
 
-    // Engine Event Listeners
-    diceEngine.on('rollComplete', (result) => {
-      updateSnapshotView(result);
-    });
-
     function executeRoll() {
-      const targetVal = targetInput.value.trim();
-      let targets = null;
-      if (targetVal) {
-        const parsed = diceEngine.parseTargetRollString(targetVal);
-        if (parsed) {
-          targets = parsed.targets;
-        }
-      }
+      const loadoutStr = loadoutInput.value.trim();
+      const { dice, targets, isTarget } = parseLoadout(loadoutStr);
+      const materials = dice.map((_, idx) => MATERIAL_PALETTE[idx % MATERIAL_PALETTE.length].id);
+
+      updateRollButtonLabel(dice);
+      updateActivePreset(loadoutStr);
 
       if (diceEngine.isSoundEnabled()) {
         diceEngine.soundSystem.playDieCollision({ x: 0, y: 0, z: 0 }, 1.0, 1.0);
@@ -517,16 +671,42 @@
       rollBtn.style.transform = 'scale(0.97)';
       setTimeout(() => { rollBtn.style.transform = ''; }, 80);
 
-      diceEngine.rollInstant({
-        dice: poolTypes,
+      const result = diceEngine.rollInstant({
+        dice,
         targets,
-        materials: poolMaterials,
+        materials,
         renderer,
         camera
       });
+
+      updateSnapshotView(result, loadoutStr || '5d6', isTarget);
     }
 
     rollBtn.addEventListener('click', executeRoll);
+
+    loadoutInput.addEventListener('input', () => {
+      const { dice } = parseLoadout(loadoutInput.value);
+      updateRollButtonLabel(dice);
+      updateActivePreset(loadoutInput.value);
+    });
+
+    loadoutInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        executeRoll();
+      }
+    });
+
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.dataset.loadout;
+        loadoutInput.value = val;
+        const { dice } = parseLoadout(val);
+        updateRollButtonLabel(dice);
+        updateActivePreset(val);
+        executeRoll();
+      });
+    });
 
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space') {
@@ -546,27 +726,15 @@
       soundText.textContent = isEnabled ? 'Sound OFF' : 'Sound ON';
     });
 
-    document.querySelectorAll('[data-preset]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const preset = btn.dataset.preset;
-        targetInput.value = (preset === 'clear') ? '' : preset;
-        executeRoll();
-      });
-    });
-
-    targetInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        executeRoll();
-      }
-    });
-
     async function init() {
       await diceEngine.init();
+      const { dice } = parseLoadout(loadoutInput.value);
+      updateRollButtonLabel(dice);
+      updateActivePreset(loadoutInput.value);
       executeRoll();
     }
 
-    init();
+  init();
   </script>
 </body>
 
