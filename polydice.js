@@ -1457,68 +1457,72 @@ class DiceAudioSystem {
 
   /**
    * DIE ON DIE COLLISION (Acrylic on Acrylic):
-   * Deep, chunky solid resin clack.
-   * Resonant body at ~360-480 Hz + instantaneous clean 2.5ms cosine impulse.
-   * Eliminates white-noise rainstick effect.
+   * Crisp, high-frequency snap and crackle transient.
+   * High-pitch resin snap (2800-4800 Hz) + bright body resonance (1380 Hz -> 920 Hz).
+   * Replaces the low 220 Hz thud with a clean, snappy clack.
    */
   playDieCollision(pos, intensity = 1.0, combinedMass = 1.0) {
     if (!this.enabled || !this.ctx) return;
     const now = this.ctx.currentTime;
-    if (now - this.lastDieTime < 0.038) return;
+    if (now - this.lastDieTime < 0.028) return;
     this.lastDieTime = now;
 
-    const gainScale = Math.min(Math.max(intensity, 0.15), 2.6) * 0.52;
+    const gainScale = Math.min(Math.max(intensity, 0.15), 2.6) * 0.55;
     const detuneCents = (Math.random() - 0.5) * 180;
 
-    // 1. Instantaneous Clean Resin Impulse (2.5ms windowed cosine pressure wave, NO white noise)
-    const snapDuration = 0.0028;
+    // 1. Instantaneous Crisp Snap & Crackle Transient (Dual-frequency impulse: 2800Hz + 4800Hz overtone)
+    const snapDuration = 0.0035;
     const snapSamples = Math.floor(this.ctx.sampleRate * snapDuration);
     const snapBuf = this.ctx.createBuffer(1, snapSamples, this.ctx.sampleRate);
     const snapData = snapBuf.getChannelData(0);
-    const impulseFreq = 820 + Math.random() * 120;
+    const snapFreq1 = 2800 + Math.random() * 500;
+    const snapFreq2 = 4800 + Math.random() * 1000;
     for (let i = 0; i < snapSamples; i++) {
       const t = i / this.ctx.sampleRate;
       const window = 0.5 * (1 - Math.cos((2 * Math.PI * i) / snapSamples));
-      snapData[i] = Math.sin(2 * Math.PI * impulseFreq * t) * window * Math.exp(-i / (snapSamples * 0.35));
+      const primary = Math.sin(2 * Math.PI * snapFreq1 * t);
+      const crackle = 0.65 * Math.sin(2 * Math.PI * snapFreq2 * t);
+      snapData[i] = (primary + crackle) * window * Math.exp(-i / (snapSamples * 0.32));
     }
     const snapSource = this.ctx.createBufferSource();
     snapSource.buffer = snapBuf;
 
     const snapGain = this.ctx.createGain();
-    snapGain.gain.setValueAtTime(gainScale * 0.75, now);
+    snapGain.gain.setValueAtTime(gainScale * 0.95, now);
     snapGain.gain.exponentialRampToValueAtTime(0.0001, now + snapDuration);
     snapSource.connect(snapGain);
 
-    // 2. Chunky Solid Resin Body Resonance (Triangle wave dropping 490Hz -> 320Hz)
+    // 2. High-Pitched Resonant Body Clack (Triangle wave 1380Hz -> 920Hz in 14ms)
     const bodyOsc = this.ctx.createOscillator();
     const bodyGain = this.ctx.createGain();
     bodyOsc.type = 'triangle';
-    const startFreq = 480 + (Math.random() - 0.5) * 60;
+    const startFreq = 1380 + (Math.random() - 0.5) * 180;
     bodyOsc.frequency.setValueAtTime(startFreq, now);
-    bodyOsc.frequency.exponentialRampToValueAtTime(startFreq * 0.65, now + 0.018);
+    bodyOsc.frequency.exponentialRampToValueAtTime(startFreq * 0.67, now + 0.014);
     bodyOsc.detune.setValueAtTime(detuneCents, now);
 
-    bodyGain.gain.setValueAtTime(gainScale * 0.68, now);
-    bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.024);
+    bodyGain.gain.setValueAtTime(gainScale * 0.72, now);
+    bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.018);
     bodyOsc.connect(bodyGain);
 
-    // 3. Dense Core Harmonic (220 Hz low tap for weighty acrylic feel)
-    const lowOsc = this.ctx.createOscillator();
-    const lowGain = this.ctx.createGain();
-    lowOsc.type = 'sine';
-    lowOsc.frequency.setValueAtTime(220 + (Math.random() - 0.5) * 30, now);
-    lowOsc.frequency.exponentialRampToValueAtTime(130, now + 0.016);
-    lowOsc.detune.setValueAtTime(detuneCents * 0.7, now);
+    // 3. Crisp Mid Impact Ping (680 Hz -> 420 Hz, replaces muddy low 220Hz thud)
+    const midOsc = this.ctx.createOscillator();
+    const midGain = this.ctx.createGain();
+    midOsc.type = 'sine';
+    const midFreq = 680 + (Math.random() - 0.5) * 80;
+    midOsc.frequency.setValueAtTime(midFreq, now);
+    midOsc.frequency.exponentialRampToValueAtTime(420, now + 0.012);
+    midOsc.detune.setValueAtTime(detuneCents * 0.7, now);
 
-    lowGain.gain.setValueAtTime(gainScale * 0.38, now);
-    lowGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.02);
-    lowOsc.connect(lowGain);
+    midGain.gain.setValueAtTime(gainScale * 0.25, now);
+    midGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.015);
+    midOsc.connect(midGain);
 
     // Master Output & 3D Spatial Panner
     const master = this.ctx.createGain();
     snapGain.connect(master);
     bodyGain.connect(master);
-    lowGain.connect(master);
+    midGain.connect(master);
 
     const panner = this._createPanner(pos, now);
     if (panner) master.connect(panner);
@@ -1527,9 +1531,9 @@ class DiceAudioSystem {
     snapSource.start(now);
     snapSource.stop(now + snapDuration);
     bodyOsc.start(now);
-    bodyOsc.stop(now + 0.026);
-    lowOsc.start(now);
-    lowOsc.stop(now + 0.022);
+    bodyOsc.stop(now + 0.020);
+    midOsc.start(now);
+    midOsc.stop(now + 0.016);
   }
 
   /**
