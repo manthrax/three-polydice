@@ -49,11 +49,15 @@
     }
 
     /* Top Navigation Header (Minimal & Compact) */
+    header#main-header,
+    header.app-header,
     header:not(#server-header):not(.demo-header) {
       position: absolute;
       top: 10px;
       left: 12px;
       right: 12px;
+      width: calc(100% - 24px);
+      box-sizing: border-box;
       display: flex;
       justify-content: space-between;
       align-items: center;
