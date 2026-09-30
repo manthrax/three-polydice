@@ -2542,10 +2542,139 @@ export class PolyDice {
   }
 
   // =========================================================================
-  // ROLLING INTERFACE (PROMISES & EVENTS)
+  // ROLLING INTERFACE (PROMISES, EVENTS & INSTANT SNAPSHOTS)
   // =========================================================================
 
+  /**
+   * Performs an instant RNG-based (or predetermined) visual roll without running physics simulation.
+   * Ideal for 2D web games, card games, UI snapshots, and lightweight rendering.
+   * Completely eliminates the Ammo.js dependency and simulation delay!
+   *
+   * @param {Object} [options]
+   * @param {string[]} [options.dice] e.g. ['d6', 'd6', 'd6', 'd6', 'd6']
+   * @param {number[]} [options.targets] Optional predetermined target values
+   * @param {string[]} [options.materials] Optional material keys for each die
+   * @param {THREE.WebGLRenderer} [options.renderer] Optional renderer override
+   * @param {THREE.Camera} [options.camera] Optional camera override
+   * @param {boolean} [options.snapshot=true] Whether to generate and return a canvas snapshot
+   * @returns {Object} { total, dice, breakdown, summary, snapshotCanvas, snapshotDataUrl }
+   */
+  rollInstant(options = {}) {
+    const dice = options.dice || this.dicePool || ['d6', 'd6', 'd6', 'd6', 'd6'];
+    const targets = options.targets || null;
+    const materials = options.materials || this.poolMaterials || [];
+    const renderer = options.renderer || this.renderer;
+    const camera = options.camera || this.camera;
+
+    this.clearActiveDice();
+    this.isRollingState = false;
+
+    const diceResults = [];
+    let total = 0;
+    const subtotalsByType = {};
+
+    dice.forEach((type, idx) => {
+      const targetVal = (targets && targets[idx] != null) ? targets[idx] : null;
+      const matKey = materials[idx] || this.materialKey;
+      const asset = this.getDiceAsset(type, { material: matKey });
+      const mesh = new this.THREE.Mesh(asset.geometry, asset.material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.group.add(mesh);
+
+      const descriptors = asset.faceDescriptors || [];
+      let fd = null;
+      if (targetVal != null) {
+        fd = descriptors.find(f => f.value === targetVal);
+      }
+      if (!fd && descriptors.length > 0) {
+        fd = descriptors[Math.floor(Math.random() * descriptors.length)];
+      }
+
+      const val = fd ? fd.value : 1;
+
+      const dieRecord = {
+        id: idx + 1,
+        type,
+        mesh,
+        asset,
+        winningFaceDescriptor: fd,
+        targetValue: val,
+        result: val,
+        material: matKey
+      };
+      this.activeDiceInstances.push(dieRecord);
+
+      total += val;
+      if (!subtotalsByType[type]) subtotalsByType[type] = [];
+      subtotalsByType[type].push(val);
+
+      diceResults.push({
+        id: idx + 1,
+        type,
+        result: val,
+        value: val,
+        material: matKey
+      });
+    });
+
+    const breakdownParts = [];
+    for (const [type, vals] of Object.entries(subtotalsByType)) {
+      const count = vals.length;
+      const subSum = vals.reduce((a, b) => a + b, 0);
+      if (count === 1) {
+        breakdownParts.push(`${type}: ${vals[0]}`);
+      } else {
+        breakdownParts.push(`${count}${type}: [${vals.join(', ')}] (${subSum})`);
+      }
+    }
+    const humanString = breakdownParts.join('  •  ');
+
+    const result = {
+      timestamp: new Date().toISOString(),
+      total,
+      diceCount: diceResults.length,
+      dice: diceResults,
+      breakdown: subtotalsByType,
+      summary: humanString
+    };
+
+    this.lastRollResult = result;
+
+    let snapshotCanvas = null;
+    let snapshotDataUrl = null;
+
+    if (renderer && camera && options.snapshot !== false) {
+      snapshotCanvas = this.generateSnapshot(renderer, camera, options);
+      if (snapshotCanvas) {
+        snapshotDataUrl = snapshotCanvas.toDataURL('image/png');
+        result.snapshotCanvas = snapshotCanvas;
+        result.snapshotDataUrl = snapshotDataUrl;
+      }
+    }
+
+    this.emit('rollStart', { pool: [...dice], instant: true, targets });
+    this.emit('rollComplete', result);
+
+    if (typeof window !== 'undefined') {
+      window.lastRollResult = result;
+      window.dispatchEvent(new CustomEvent('diceRollComplete', { detail: result }));
+    }
+
+    if (this.currentRollResolve) {
+      const resolve = this.currentRollResolve;
+      this.currentRollResolve = null;
+      resolve(result);
+    }
+
+    return result;
+  }
+
   roll(options = {}) {
+    if (options.instant || !this.AmmoLib) {
+      return Promise.resolve(this.rollInstant(options));
+    }
+
     const power = options.power != null ? options.power : 1.0;
     const targets = options.targets || null;
     const dice = options.dice || null;
@@ -2589,6 +2718,9 @@ export class PolyDice {
   }
 
   rollPredeterminedDice(diceTypes, targetValues, power = 1.0) {
+    if (!this.AmmoLib) {
+      return Promise.resolve(this.rollInstant({ dice: diceTypes, targets: targetValues }));
+    }
     return this.roll({ dice: diceTypes, targets: targetValues, power });
   }
 

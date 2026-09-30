@@ -265,9 +265,6 @@
     }
   </style>
 
-  <!-- Ammo.js Physics Engine -->
-  <script src="https://cdn.jsdelivr.net/gh/kripken/ammo.js@main/builds/ammo.js"></script>
-
   <script type="importmap">
     {
       "imports": {
@@ -406,11 +403,10 @@
     const poolTypes = DICE_CONFIG.map(d => d.type);
     const poolMaterials = DICE_CONFIG.map(d => d.mat);
 
-    // 3. PolyDice Instance
+    // 3. PolyDice Instance (Visual & Snapshot Mode - No Ammo physics required!)
     const diceEngine = new PolyDice({
       THREE,
       ConvexHull,
-      Ammo: window.Ammo,
       scene,
       camera,
       dicePool: poolTypes,
@@ -425,9 +421,6 @@
     diceEngine.renderer = renderer;
     diceEngine.domElement = renderer.domElement;
     diceEngine.camera = camera;
-
-    const visualTray = diceEngine.createDefaultVisualTray();
-    visualTray.visible = true;
 
     // UI Elements
     const snapshotImg = document.getElementById('roll-snapshot-img');
@@ -445,24 +438,17 @@
     let rollCount = 0;
     const history = [];
 
-    // Background Render / Physics loop
-    let lastTime = performance.now();
-    function animate() {
-      requestAnimationFrame(animate);
-      const now = performance.now();
-      const dt = Math.min((now - lastTime) / 1000, 0.05);
-      lastTime = now;
-
-      diceEngine.update(dt);
-      renderer.render(scene, camera);
-    }
-
     // Capture Snapshot & Update View
     function updateSnapshotView(result) {
-      const snapshotCanvas = diceEngine.generateSnapshot(renderer, camera);
-      if (snapshotCanvas) {
-        snapshotImg.src = snapshotCanvas.toDataURL('image/png');
+      if (result.snapshotDataUrl) {
+        snapshotImg.src = result.snapshotDataUrl;
         snapshotImg.style.opacity = '1';
+      } else {
+        const snapshotCanvas = diceEngine.generateSnapshot(renderer, camera);
+        if (snapshotCanvas) {
+          snapshotImg.src = snapshotCanvas.toDataURL('image/png');
+          snapshotImg.style.opacity = '1';
+        }
       }
 
       totalValEl.textContent = result.total;
@@ -509,36 +495,41 @@
     }
 
     // Engine Event Listeners
-    diceEngine.on('rollStart', () => {
-      rollBtn.disabled = true;
-      loadingOverlay.classList.add('active');
-    });
-
     diceEngine.on('rollComplete', (result) => {
-      loadingOverlay.classList.remove('active');
-      rollBtn.disabled = false;
       updateSnapshotView(result);
     });
 
     function executeRoll() {
-      if (diceEngine.isRolling()) return;
-
       const targetVal = targetInput.value.trim();
+      let targets = null;
       if (targetVal) {
         const parsed = diceEngine.parseTargetRollString(targetVal);
         if (parsed) {
-          diceEngine.rollPredeterminedDice(poolTypes, parsed.targets, 1.0);
-          return;
+          targets = parsed.targets;
         }
       }
 
-      diceEngine.roll({ power: 1.0 });
+      if (diceEngine.isSoundEnabled()) {
+        diceEngine.soundSystem.playDieCollision({ x: 0, y: 0, z: 0 }, 1.0, 1.0);
+      }
+
+      // Subtle button press feedback
+      rollBtn.style.transform = 'scale(0.97)';
+      setTimeout(() => { rollBtn.style.transform = ''; }, 80);
+
+      diceEngine.rollInstant({
+        dice: poolTypes,
+        targets,
+        materials: poolMaterials,
+        renderer,
+        camera
+      });
     }
 
     rollBtn.addEventListener('click', executeRoll);
 
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' && !diceEngine.isRolling()) {
+      if (e.code === 'Space') {
         const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
         if (tag !== 'input') {
           e.preventDefault();
@@ -572,7 +563,6 @@
 
     async function init() {
       await diceEngine.init();
-      animate();
       executeRoll();
     }
 

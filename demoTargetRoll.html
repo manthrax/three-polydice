@@ -143,6 +143,13 @@
       box-shadow: none;
     }
 
+    .small-btn.active-preset {
+      border-color: var(--accent-gold) !important;
+      background: rgba(229, 192, 123, 0.18) !important;
+      color: #fff !important;
+      box-shadow: 0 0 10px rgba(229, 192, 123, 0.3);
+    }
+
     .server-log-bar {
       display: flex;
       align-items: center;
@@ -303,7 +310,7 @@
 
       <button class="small-btn" data-preset="d20: 20" style="flex:none; padding:5px 9px;">Nat 20 (d20: 20)</button>
       <button class="small-btn" data-preset="d20: 1" style="flex:none; padding:5px 9px;">Crit 1 (d20: 1)</button>
-      <button class="small-btn" data-preset="d20: 18; 2d6: 6, 5" style="flex:none; padding:5px 9px;">RPG Attack (d20: 18; 2d6: 6, 5)</button>
+      <button class="small-btn active-preset" data-preset="d20: 18; 2d6: 6, 5" style="flex:none; padding:5px 9px;">RPG Attack (d20: 18; 2d6: 6, 5)</button>
       <button class="small-btn" data-preset="4d6: 6, 6, 5, 5" style="flex:none; padding:5px 9px;">High Stat (4d6: 6, 6, 5, 5)</button>
       <button class="small-btn" data-preset="d100: 77" style="flex:none; padding:5px 9px;">Percentile (d100: 77)</button>
 
@@ -491,6 +498,7 @@
     function verifyConsensus() {
       if (resultA && resultB) {
         broadcastBtn.disabled = false;
+        broadcastBtn.innerHTML = '<span>🚀</span><span>BROADCAST ROLL</span>';
         const matches = resultA.total === resultB.total && resultA.summary === resultB.summary;
         if (matches) {
           consensusBadge.style.background = 'rgba(152, 195, 121, 0.18)';
@@ -511,8 +519,6 @@
 
     // 5. Server Broadcast Logic
     function broadcastServerRoll() {
-      if (clientA.engine.isRolling() || clientB.engine.isRolling()) return;
-
       const rollStr = serverInput.value.trim();
       const parsed = clientA.engine.parseTargetRollString(rollStr);
       if (!parsed) {
@@ -520,7 +526,18 @@
         return;
       }
 
+      // Interrupt any current roll immediately so user actions are always snappy
+      if (clientA.engine.isRolling()) {
+        clientA.engine.clearActiveDice();
+        clientA.engine.isRollingState = false;
+      }
+      if (clientB.engine.isRolling()) {
+        clientB.engine.clearActiveDice();
+        clientB.engine.isRollingState = false;
+      }
+
       broadcastBtn.disabled = true;
+      broadcastBtn.innerHTML = '<span>⏳</span><span>ROLLING...</span>';
       resultA = null;
       resultB = null;
 
@@ -545,6 +562,8 @@
 
     document.querySelectorAll('[data-preset]').forEach(btn => {
       btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-preset]').forEach(b => b.classList.remove('active-preset'));
+        btn.classList.add('active-preset');
         serverInput.value = btn.dataset.preset;
         broadcastServerRoll();
       });
@@ -558,7 +577,7 @@
     });
 
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' && !clientA.engine.isRolling() && !clientB.engine.isRolling()) {
+      if (e.code === 'Space') {
         const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
         if (tag !== 'input') {
           e.preventDefault();
