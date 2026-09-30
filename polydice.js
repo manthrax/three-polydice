@@ -3227,22 +3227,24 @@ export class PolyDice {
       } catch (e) { }
     }
 
+    const parts = str.split(/;|\s+(?=\d*d[0-9]+)|,\s*(?=\d*d[0-9]+)/i).map(s => s.trim()).filter(Boolean);
     const dice = [];
     const targets = [];
-    const segmentRegex = /(?:(\d+)\s*)?(d[0-9]+)\s*[:=]\s*\[?([0-9,\s]+)\]?/gi;
-    let match;
     let matchedAny = false;
+    const singleRegex = /^(?:(\d+)\s*)?(d[0-9]+)(?:\s*[:=]\s*\[?([0-9,\s]+)\]?)?$/i;
 
-    while ((match = segmentRegex.exec(str)) !== null) {
-      matchedAny = true;
-      const count = match[1] ? parseInt(match[1], 10) : 1;
-      const type = match[2].toLowerCase();
-      const nums = match[3].split(/[\s,]+/).filter(Boolean).map(n => parseInt(n, 10));
-
-      for (let i = 0; i < count; i++) {
-        dice.push(type);
-        const tVal = (i < nums.length) ? nums[i] : (nums[0] || null);
-        targets.push(tVal);
+    for (const part of parts) {
+      const m = singleRegex.exec(part);
+      if (m) {
+        matchedAny = true;
+        const count = m[1] ? parseInt(m[1], 10) : 1;
+        const type = m[2].toLowerCase();
+        const nums = m[3] ? m[3].split(/[\s,]+/).filter(Boolean).map(n => parseInt(n, 10)) : [];
+        for (let i = 0; i < count; i++) {
+          dice.push(type);
+          const tVal = (i < nums.length) ? nums[i] : (nums.length > 0 ? (nums[0] || null) : null);
+          targets.push(tVal);
+        }
       }
     }
 

@@ -1218,23 +1218,17 @@
         title="Export selected 3D dice models to binary .glb format">📦 Export .GLB</button>
     </div>
 
-    <div id="target-roll-section" style="margin-top: 6px;">
-      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+    <div id="target-roll-section" style="margin-top: 8px;">
+      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
         <span>Server / Target Roll</span>
-        <span style="font-size: 8.5px; color: #ff9838; font-weight: 700; letter-spacing: 0.5px;">PRESET</span>
+        <span id="target-roll-indicator" style="font-size: 8.5px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">OPTIONAL</span>
       </div>
-      <div style="display: flex; gap: 4px; margin-bottom: 4px;">
-        <input type="text" id="target-roll-input" placeholder="e.g. d20: 20 or 2d6: 6, 6"
-          style="flex: 1; min-width: 0; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: #fff; font-size: 10px; padding: 3px 6px; font-family: inherit;" />
-        <button class="small-btn" id="target-roll-btn"
-          style="flex: none; padding: 3px 8px; background: rgba(255, 122, 24, 0.25); border-color: rgba(255, 122, 24, 0.5); color: #ffab5e; font-weight: 700;"
-          title="Roll predetermined dice with realistic physics simulation">🎯 Roll</button>
-      </div>
-      <div class="presets-row">
-        <button class="small-btn" id="target-nat20" title="Roll 1d20 forced to 20">Nat 20</button>
-        <button class="small-btn" id="target-critfail" title="Roll 1d20 forced to 1">Crit 1</button>
-        <button class="small-btn" id="target-lucky7" title="Roll 2d6 forced to 3, 4">Lucky 7</button>
-        <button class="small-btn" id="target-rpgmax" title="Roll RPG 7 set with max values">Max All</button>
+      <div style="position: relative; display: flex; align-items: center;">
+        <input type="text" id="target-roll-input" placeholder="e.g. d20: 20 or 2d6: 6, 5" autocomplete="off" spellcheck="false"
+          title="Enter target roll (e.g. d20: 20 or 2d6: 6, 5). Press Enter or Roll to cast."
+          style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; color: #fff; font-size: 10.5px; padding: 5px 24px 5px 8px; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s;" />
+        <button id="target-roll-clear" title="Clear target roll"
+          style="position: absolute; right: 5px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 11px; padding: 2px 4px; display: none; line-height: 1;">✕</button>
       </div>
     </div>
   </div>
@@ -2222,13 +2216,19 @@
       diceEngine.on('rollStart', ({ power }) => {
         document.getElementById('roll-btn').disabled = true;
         document.getElementById('status-dot').className = 'status-dot rolling';
-        document.getElementById('status-text').textContent = power > 1.4 ? `Rolling (Power: ${power.toFixed(1)}x)...` : 'Rolling dice...';
+
+        const targetInput = document.getElementById('target-roll-input');
+        const targetVal = targetInput ? targetInput.value.trim() : '';
+        const isTarget = targetVal && diceEngine.parseTargetRollString(targetVal);
+
+        document.getElementById('status-text').textContent = isTarget ? 'Rolling target...' : (power > 1.4 ? `Rolling (Power: ${power.toFixed(1)}x)...` : 'Rolling dice...');
         document.getElementById('result-banner').classList.remove('visible');
 
         const btnText = document.getElementById('roll-btn-text');
         const hintText = document.getElementById('roll-hint-text');
-        if (btnText) btnText.innerHTML = '🎲 ROLLING...';
+        if (btnText) btnText.innerHTML = isTarget ? '🎯 ROLLING TARGET...' : '🎲 ROLLING...';
         if (hintText) hintText.innerHTML = power > 1.4 ? `Thrown with ${power.toFixed(1)}x power` : 'Rolling in tray...';
+        updatePoolChipsUI();
       });
 
       diceEngine.on('rollComplete', (result) => {
@@ -2252,10 +2252,37 @@
         document.getElementById('result-banner').classList.add('visible');
       });
 
-      // Roll with charge throw
+      // Roll with charge throw & target roll integration
       let chargeStartTime = 0;
       let isCharging = false;
       let chargeAnimId = null;
+
+      function executeRollWithTarget(power = 1.0) {
+        if (diceEngine.isRolling()) return;
+
+        const targetInput = document.getElementById('target-roll-input');
+        const targetVal = targetInput ? targetInput.value.trim() : '';
+
+        if (targetVal) {
+          const parsed = diceEngine.parseTargetRollString(targetVal);
+          if (parsed) {
+            diceEngine.rollPredeterminedDice(parsed.dice, parsed.targets, power);
+            updatePoolChipsUI();
+            return;
+          } else {
+            if (targetInput) {
+              targetInput.style.borderColor = 'rgba(255, 85, 85, 0.9)';
+              targetInput.style.boxShadow = '0 0 8px rgba(255, 85, 85, 0.5)';
+              setTimeout(() => {
+                if (typeof updateTargetInputUI === 'function') updateTargetInputUI();
+              }, 1200);
+            }
+            return;
+          }
+        }
+
+        diceEngine.roll({ power });
+      }
 
       function startCharge(e) {
         if (diceEngine.isRolling()) return;
@@ -2290,7 +2317,7 @@
         const ratio = elapsed / 2.0;
         const power = 1.0 + ratio * 1.2;
 
-        diceEngine.roll({ power });
+        executeRollWithTarget(power);
       }
 
       // Capture & Open Snapshot Modal
@@ -2437,6 +2464,68 @@
           releaseCharge();
         }
       });
+
+      // Target Roll Input Handling
+      const targetInput = document.getElementById('target-roll-input');
+      const targetClearBtn = document.getElementById('target-roll-clear');
+      const targetIndicator = document.getElementById('target-roll-indicator');
+
+      function updateTargetInputUI() {
+        if (!targetInput) return;
+        const val = targetInput.value.trim();
+        if (targetClearBtn) targetClearBtn.style.display = val ? 'block' : 'none';
+
+        if (!val) {
+          if (targetIndicator) {
+            targetIndicator.textContent = 'OPTIONAL';
+            targetIndicator.style.color = 'var(--text-muted)';
+          }
+          targetInput.style.borderColor = 'rgba(255,255,255,0.12)';
+          targetInput.style.boxShadow = 'none';
+          return;
+        }
+
+        const parsed = diceEngine.parseTargetRollString(val);
+        if (parsed) {
+          if (targetIndicator) {
+            targetIndicator.textContent = 'TARGET ACTIVE';
+            targetIndicator.style.color = '#ffab5e';
+          }
+          targetInput.style.borderColor = 'rgba(255, 171, 94, 0.6)';
+          targetInput.style.boxShadow = '0 0 6px rgba(255, 171, 94, 0.25)';
+        } else {
+          if (targetIndicator) {
+            targetIndicator.textContent = 'INVALID FORMAT';
+            targetIndicator.style.color = '#ff5555';
+          }
+          targetInput.style.borderColor = 'rgba(255, 85, 85, 0.6)';
+          targetInput.style.boxShadow = '0 0 6px rgba(255, 85, 85, 0.25)';
+        }
+      }
+
+      if (targetInput) {
+        targetInput.addEventListener('input', updateTargetInputUI);
+        targetInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            executeRollWithTarget(1.0);
+          } else if (e.key === 'Escape') {
+            targetInput.value = '';
+            updateTargetInputUI();
+            targetInput.blur();
+          }
+        });
+      }
+
+      if (targetClearBtn) {
+        targetClearBtn.addEventListener('click', () => {
+          if (targetInput) {
+            targetInput.value = '';
+            updateTargetInputUI();
+            targetInput.focus();
+          }
+        });
+      }
 
       document.getElementById('tab-tray').addEventListener('click', () => switchMode('tray'));
       document.getElementById('tab-inspector').addEventListener('click', () => switchMode('inspector'));
