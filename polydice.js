@@ -1836,9 +1836,9 @@ export class PolyDice {
     // Emerald Casino Velvet Felt Floor
     const feltGeo = new THREE.BoxGeometry(TRAY_SIZE, 0.4, TRAY_SIZE);
     const feltMat = new THREE.MeshStandardMaterial({
-      color: '#0d5c24', // Rich, luminous casino emerald velvet felt
-      roughness: 0.58,
-      metalness: 0.04,
+      color: '#0a3617', // Deep, luxurious dark casino velvet felt
+      roughness: 0.82,
+      metalness: 0.01,
       dithering: true
     });
     const feltMesh = new THREE.Mesh(feltGeo, feltMat);
@@ -1848,8 +1848,8 @@ export class PolyDice {
 
     // Warm Polished Walnut Tray Walls
     const wallMat = new THREE.MeshStandardMaterial({
-      color: '#3d2517', // Warm lustrous rich walnut
-      roughness: 0.20,
+      color: '#341f13', // Warm lustrous rich walnut
+      roughness: 0.22,
       metalness: 0.10,
       dithering: true
     });

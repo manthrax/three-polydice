@@ -120,7 +120,7 @@ export function setupDemoViewport(options = {}) {
   renderer.setSize(initialW, initialH, false);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.28;
+  renderer.toneMappingExposure = 1.14;
   if (THREE.SRGBColorSpace) {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
   } else if (THREE.sRGBEncoding) {
@@ -133,13 +133,13 @@ export function setupDemoViewport(options = {}) {
   scene.environment = moodyEnvMap;
 
   // Multi-light studio rig: Ambient, Sky/Ground Hemi, Key, Fill & Rim
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.50);
   scene.add(ambientLight);
 
-  const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x1a2e22, 0.85);
+  const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x1a2e22, 0.40);
   scene.add(hemiLight);
 
-  const keyLight = new THREE.DirectionalLight(0xfffaee, 2.8);
+  const keyLight = new THREE.DirectionalLight(0xfffaee, 2.4);
   keyLight.position.set(6, 18, 8);
   keyLight.castShadow = true;
   keyLight.shadow.mapSize.width = 2048;
@@ -156,11 +156,11 @@ export function setupDemoViewport(options = {}) {
   scene.add(keyLight.target);
   keyLight.target.position.set(0, 0, 0);
 
-  const fillLight = new THREE.DirectionalLight(0x8ec5fc, 1.4);
+  const fillLight = new THREE.DirectionalLight(0x8ec5fc, 1.0);
   fillLight.position.set(-8, 12, -6);
   scene.add(fillLight);
 
-  const rimLight = new THREE.DirectionalLight(0xffeedd, 1.5);
+  const rimLight = new THREE.DirectionalLight(0xffeedd, 1.2);
   rimLight.position.set(0, 8, -12);
   scene.add(rimLight);
 

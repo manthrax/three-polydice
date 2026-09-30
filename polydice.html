@@ -745,7 +745,7 @@
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(window.innerWidth, window.innerHeight, false);
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.28;
+      renderer.toneMappingExposure = 1.14;
       if (THREE.SRGBColorSpace) {
         renderer.outputColorSpace = THREE.SRGBColorSpace;
       } else if (THREE.sRGBEncoding) {
@@ -771,7 +771,7 @@
       });
 
       // 1. Key Directional Light (Overhead-Front-Right)
-      const keyLight = new THREE.DirectionalLight(0xfffaee, 2.8);
+      const keyLight = new THREE.DirectionalLight(0xfffaee, 2.4);
       keyLight.position.set(6, 18, 8);
       keyLight.castShadow = true;
       keyLight.shadow.mapSize.width = 2048;
@@ -789,21 +789,21 @@
       keyLight.target.position.set(0, 0, 0);
 
       // 2. Fill Directional Light (Front-Left, Cool Slate/Cyan Tint)
-      const fillLight = new THREE.DirectionalLight(0x8ec5fc, 1.4);
+      const fillLight = new THREE.DirectionalLight(0x8ec5fc, 1.0);
       fillLight.position.set(-8, 12, -6);
       scene.add(fillLight);
 
       // 3. Rim / Kicker Light (Back, Warm Champagne Tint for facet pop)
-      const kickerLight = new THREE.DirectionalLight(0xffeedd, 1.5);
+      const kickerLight = new THREE.DirectionalLight(0xffeedd, 1.2);
       kickerLight.position.set(0, 8, -12);
       scene.add(kickerLight);
 
       // 4. Soft Top Ambient Light
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.50);
       scene.add(ambientLight);
 
       // 5. Hemisphere Sky/Ground Light
-      const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x1a2e22, 0.85);
+      const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x1a2e22, 0.40);
       scene.add(hemiLight);
 
       // 3D Inspector Studio Environment Rig
