@@ -104,7 +104,7 @@ Clone the repository and serve locally using any standard static file server:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/polydice.git
+git clone https://github.com/manthrax/polydice.git
 cd polydice
 
 # Start a local server (Python 3)
