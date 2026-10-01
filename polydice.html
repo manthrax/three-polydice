@@ -53,6 +53,12 @@
         </button>
       </div>
 
+      <button id="mp-header-btn" class="tab-btn"
+        style="background: rgba(13,16,22,0.9); border: 1.5px solid rgba(97, 175, 239, 0.45); color: #fff;"
+        title="Multiplayer Tabletop Room: Share trays, host turns, and roll together">
+        <span>🌐</span> <span id="mp-header-btn-text">Multiplayer</span>
+      </button>
+
       <button id="config-btn" class="tab-btn"
         style="background: rgba(13,16,22,0.9); border: 1px solid rgba(97, 175, 239, 0.4); color: var(--accent);"
         title="Open Theming & Library Configurator (Generate JS Code, Target Strings, JSON)">
@@ -877,6 +883,9 @@
         <div id="dice-bag-grid" class="dice-bag-grid">
           <!-- Rendered dynamically -->
         </div>
+      </div>
+    </div>
+
     <!-- Floating Spectator Tray Viewport Banner -->
     <div id="spectator-banner" class="mp-spectator-banner">
       <span style="font-size: 14px;">👀</span>
@@ -3121,13 +3130,13 @@
       });
 
       // Target Roll Input Handling
-      const targetInput = document.getElementById('target-roll-input');
+      const targetInputField = document.getElementById('target-roll-input');
       const targetClearBtn = document.getElementById('target-roll-clear');
       const targetIndicator = document.getElementById('target-roll-indicator');
 
       function updateTargetInputUI() {
-        if (!targetInput) return;
-        const val = targetInput.value.trim();
+        if (!targetInputField) return;
+        const val = targetInputField.value.trim();
         if (targetClearBtn) targetClearBtn.style.display = val ? 'block' : 'none';
 
         if (!val) {
@@ -3135,8 +3144,8 @@
             targetIndicator.textContent = 'OPTIONAL';
             targetIndicator.style.color = 'var(--text-muted)';
           }
-          targetInput.style.borderColor = 'rgba(255,255,255,0.12)';
-          targetInput.style.boxShadow = 'none';
+          targetInputField.style.borderColor = 'rgba(255,255,255,0.12)';
+          targetInputField.style.boxShadow = 'none';
           return;
         }
 
@@ -3146,38 +3155,38 @@
             targetIndicator.textContent = 'TARGET ACTIVE';
             targetIndicator.style.color = '#ffab5e';
           }
-          targetInput.style.borderColor = 'rgba(255, 171, 94, 0.6)';
-          targetInput.style.boxShadow = '0 0 6px rgba(255, 171, 94, 0.25)';
+          targetInputField.style.borderColor = 'rgba(255, 171, 94, 0.6)';
+          targetInputField.style.boxShadow = '0 0 6px rgba(255, 171, 94, 0.25)';
         } else {
           if (targetIndicator) {
             targetIndicator.textContent = 'INVALID FORMAT';
             targetIndicator.style.color = '#ff5555';
           }
-          targetInput.style.borderColor = 'rgba(255, 85, 85, 0.6)';
-          targetInput.style.boxShadow = '0 0 6px rgba(255, 85, 85, 0.25)';
+          targetInputField.style.borderColor = 'rgba(255, 85, 85, 0.6)';
+          targetInputField.style.boxShadow = '0 0 6px rgba(255, 85, 85, 0.25)';
         }
       }
 
-      if (targetInput) {
-        targetInput.addEventListener('input', updateTargetInputUI);
-        targetInput.addEventListener('keydown', (e) => {
+      if (targetInputField) {
+        targetInputField.addEventListener('input', updateTargetInputUI);
+        targetInputField.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
             executeRollWithTarget(1.0);
           } else if (e.key === 'Escape') {
-            targetInput.value = '';
+            targetInputField.value = '';
             updateTargetInputUI();
-            targetInput.blur();
+            targetInputField.blur();
           }
         });
       }
 
       if (targetClearBtn) {
         targetClearBtn.addEventListener('click', () => {
-          if (targetInput) {
-            targetInput.value = '';
+          if (targetInputField) {
+            targetInputField.value = '';
             updateTargetInputUI();
-            targetInput.focus();
+            targetInputField.focus();
           }
         });
       }
@@ -4076,6 +4085,7 @@ dice.on('rollComplete', (res) => {
           if (nameInput) nameInput.value = savedName;
           if (roomInput && roomParam) roomInput.value = roomParam.toUpperCase();
 
+          document.getElementById('mp-header-btn')?.addEventListener('click', () => this.openModal());
           document.getElementById('mp-room-overlay')?.addEventListener('click', () => this.openModal());
           document.getElementById('close-mp-btn')?.addEventListener('click', () => this.closeModal());
           document.getElementById('mp-join-create-btn')?.addEventListener('click', () => {
@@ -4258,6 +4268,13 @@ dice.on('rollComplete', (res) => {
           if (overlayEl) overlayEl.classList.add('in-room');
           if (overlayTitle) overlayTitle.textContent = `Room: ${this.roomId}`;
           if (overlaySub) overlaySub.textContent = `${this.roomData.players.length} Players`;
+          const headerBtnText = document.getElementById('mp-header-btn-text');
+          const headerBtn = document.getElementById('mp-header-btn');
+          if (headerBtnText) headerBtnText.textContent = `Room: ${this.roomId}`;
+          if (headerBtn) {
+            headerBtn.style.borderColor = '#98c379';
+            headerBtn.style.color = '#98c379';
+          }
           if (badgeEl) {
             badgeEl.style.display = 'inline-block';
             badgeEl.textContent = this.roomData.players.length;
@@ -4521,6 +4538,13 @@ dice.on('rollComplete', (res) => {
           if (overlayEl) overlayEl.classList.remove('in-room');
           if (overlayTitle) overlayTitle.textContent = `Multiplayer`;
           if (overlaySub) overlaySub.textContent = `Click to Join / Host`;
+          const headerBtnText = document.getElementById('mp-header-btn-text');
+          const headerBtn = document.getElementById('mp-header-btn');
+          if (headerBtnText) headerBtnText.textContent = `Multiplayer`;
+          if (headerBtn) {
+            headerBtn.style.borderColor = 'rgba(97, 175, 239, 0.45)';
+            headerBtn.style.color = '#fff';
+          }
           if (badgeEl) badgeEl.style.display = 'none';
 
           const url = new URL(window.location);
