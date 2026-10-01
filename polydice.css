@@ -1331,3 +1331,232 @@
       color: #eb5757;
       background: rgba(235, 87, 87, 0.15);
     }
+
+    /* ========================================================================= */
+    /* PHASE 2: MULTIPLAYER ROOM & SPECTATOR HUD STYLES                          */
+    /* ========================================================================= */
+
+    .mp-room-overlay {
+      position: fixed;
+      bottom: 20px;
+      right: 185px;
+      z-index: 50;
+      background: rgba(14, 18, 25, 0.88);
+      border: 1.5px solid rgba(97, 175, 239, 0.45);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 12px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(97, 175, 239, 0.12);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+
+    .mp-room-overlay:hover {
+      background: rgba(22, 28, 40, 0.95);
+      border-color: var(--accent);
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 0 20px rgba(97, 175, 239, 0.3);
+    }
+
+    .mp-room-overlay.in-room {
+      border-color: #98c379;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(152, 195, 121, 0.2);
+    }
+
+    .mp-room-badge {
+      background: rgba(97, 175, 239, 0.2);
+      color: var(--accent);
+      border: 1px solid rgba(97, 175, 239, 0.4);
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .mp-spectator-banner {
+      position: fixed;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 60;
+      background: rgba(18, 24, 34, 0.92);
+      border: 1.5px solid var(--accent);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 20px;
+      padding: 6px 16px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(97, 175, 239, 0.35);
+      animation: banner-glow 2s infinite alternate;
+    }
+
+    @keyframes banner-glow {
+      0% { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(97, 175, 239, 0.2); }
+      100% { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 24px rgba(97, 175, 239, 0.5); }
+    }
+
+    .mp-spectator-banner.active {
+      display: flex;
+    }
+
+    #mp-room-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(5, 7, 11, 0.75);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+
+    #mp-room-modal.open {
+      display: flex;
+      opacity: 1;
+    }
+
+    .mp-room-card {
+      width: 580px;
+      max-width: 94vw;
+      max-height: 85vh;
+      background: rgba(16, 20, 28, 0.96);
+      border: 1px solid rgba(97, 175, 239, 0.3);
+      border-radius: 14px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 24px rgba(97, 175, 239, 0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .mp-section {
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .mp-player-roster {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 4px 2px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(97, 175, 239, 0.3) transparent;
+    }
+
+    .mp-player-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(24, 30, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      transition: all 0.18s ease;
+    }
+
+    .mp-player-item:hover {
+      background: rgba(30, 38, 54, 0.9);
+      border-color: rgba(97, 175, 239, 0.3);
+    }
+
+    .mp-player-item.is-turn {
+      border-color: #ffd700;
+      background: rgba(45, 38, 20, 0.75);
+      box-shadow: 0 0 14px rgba(255, 215, 0, 0.25);
+    }
+
+    .mp-player-item.is-viewing {
+      border-color: var(--accent);
+      background: rgba(20, 36, 56, 0.85);
+    }
+
+    .mp-badge-tag {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .mp-badge-host {
+      background: rgba(255, 215, 0, 0.18);
+      color: #ffd700;
+      border: 1px solid rgba(255, 215, 0, 0.4);
+    }
+
+    .mp-badge-turn {
+      background: rgba(152, 195, 121, 0.2);
+      color: #98c379;
+      border: 1px solid rgba(152, 195, 121, 0.4);
+      animation: pulse-turn 1.2s infinite alternate;
+    }
+
+    @keyframes pulse-turn {
+      0% { opacity: 0.7; }
+      100% { opacity: 1; transform: scale(1.05); }
+    }
+
+    .mp-roll-log-list {
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 6px;
+      max-height: 140px;
+      overflow-y: auto;
+      padding: 4px 2px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(97, 175, 239, 0.3) transparent;
+      font-size: 11px;
+    }
+
+    .mp-log-entry {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 8px;
+      background: rgba(20, 26, 36, 0.6);
+      border-radius: 6px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .mp-log-entry.nat20 {
+      border-left-color: #ffd700;
+      background: rgba(45, 38, 20, 0.4);
+    }
+
+    .mp-turn-banner {
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .mp-turn-banner.my-turn {
+      background: linear-gradient(90deg, rgba(229, 192, 123, 0.2), rgba(152, 195, 121, 0.25));
+      border: 1.5px solid #ffd700;
+      color: #ffd700;
+      box-shadow: 0 0 16px rgba(255, 215, 0, 0.25);
+    }
+
+    .mp-turn-banner.other-turn {
+      background: rgba(97, 175, 239, 0.1);
+      border: 1px solid rgba(97, 175, 239, 0.3);
+      color: var(--accent);
+    }

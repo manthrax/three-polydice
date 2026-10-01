@@ -1,0 +1,13 @@
+{
+  "name": "three-polydice",
+  "version": "1.0.0",
+  "description": "Polyhedral 3D Dice Simulation Engine & Multiplayer Room Server",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
