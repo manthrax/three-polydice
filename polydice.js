@@ -1840,7 +1840,7 @@ class DiceAudioSystem {
 
       osc.start(now);
       osc.stop(now + 0.23);
-    } catch (_) {}
+    } catch (_) { }
   }
 
   dispose() {
@@ -3102,6 +3102,7 @@ export class PolyDice {
     }
     this.trajectoryPlayback.active = false;
     this.trajectoryPlayback.soundEvents = [];
+    this.isRollingState = false;
 
     this.activeDiceInstances.forEach(d => {
       if (d.body && this.physicsWorld) {

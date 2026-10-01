@@ -841,6 +841,18 @@
     <!-- Floating 3D Die Drag Ghost / Avatar -->
     <div id="die-drag-ghost" style="display: none;"></div>
 
+    <!-- Settled Die Signpost Hover Tooltip -->
+    <div id="die-hover-signpost" class="die-hover-signpost hidden" style="display: none;">
+      <div class="signpost-board">
+        <span class="signpost-type" id="signpost-die-type">D20</span>
+        <span class="signpost-val" id="signpost-die-val">20</span>
+      </div>
+      <div class="signpost-pole">
+        <div class="signpost-line"></div>
+        <div class="signpost-point"></div>
+      </div>
+    </div>
+
     <!-- Toast Notification Overlay -->
     <div id="polydice-toast" class="polydice-toast"></div>
 
@@ -1410,6 +1422,7 @@
 
       function switchMode(newMode) {
         currentMode = newMode;
+        if (typeof hideHoverSignpost === 'function') hideHoverSignpost();
 
         if (newMode === 'tray') {
           document.getElementById('tab-tray').classList.add('active');
@@ -1810,14 +1823,24 @@
 
           chip.querySelector('.chip-remove').onclick = (e) => {
             e.stopPropagation();
+            if (typeof hideHoverSignpost === 'function') hideHoverSignpost();
             if (correspondingDie) {
               diceEngine.removeDie(correspondingDie);
             } else {
               diceEngine.removeDieFromPool(idx);
             }
+            if (diceEngine.getActiveDice().length === 0) {
+              const banner = document.getElementById('result-banner');
+              if (banner) banner.classList.remove('visible');
+              const statusText = document.getElementById('status-text');
+              if (statusText) statusText.textContent = 'Empty';
+              const totalVal = document.getElementById('result-total-val');
+              if (totalVal) totalVal.textContent = '0';
+            }
             updatePoolChipsUI();
             updateMaterialUI();
             updateFaceStyleUI();
+            scheduleAutoSave();
           };
           container.appendChild(chip);
         });
@@ -1825,8 +1848,11 @@
 
       function addDieToPoolUI(type) {
         if (diceEngine.getDicePool().length >= 24) return;
-        diceEngine.addDieToPool(type);
+        diceEngine.spawnDieIntoTray(type, currentMaterial);
         updatePoolChipsUI();
+        updateMaterialUI();
+        updateFaceStyleUI();
+        scheduleAutoSave();
       }
 
       function setBevelUI(bevel, segments = null) {
@@ -1936,8 +1962,24 @@
             pool = ['d14', 'd16', 'd24', 'd30', 'd48', 'd60', 'd100', 'd120'];
             break;
         }
-        diceEngine.setDicePool(pool, materials);
+        if (currentMode === 'tray') {
+          diceEngine.clearActiveDice();
+          diceEngine.setDicePool([]);
+          if (materials) {
+            materials.forEach((mat, i) => {
+              diceEngine.spawnDieIntoTray(pool[i], mat);
+            });
+          } else {
+            diceEngine.spawnDiceSetIntoTray(pool, currentMaterial);
+          }
+          if (typeof hideHoverSignpost === 'function') hideHoverSignpost();
+        } else {
+          diceEngine.setDicePool(pool, materials);
+        }
         updatePoolChipsUI();
+        updateMaterialUI();
+        updateFaceStyleUI();
+        scheduleAutoSave();
         document.querySelectorAll('#presets-section .preset-chip').forEach(c => {
           c.classList.toggle('active', c.dataset.preset === presetKey);
         });
@@ -3207,6 +3249,73 @@
       let isDraggingDie = false;
       const bagOverlay = document.getElementById('dice-bag-overlay');
       const dragGhost = document.getElementById('die-drag-ghost');
+      const hoverSignpost = document.getElementById('die-hover-signpost');
+      const signpostDieType = document.getElementById('signpost-die-type');
+      const signpostDieVal = document.getElementById('signpost-die-val');
+      let currentHoveredDie = null;
+
+      function updateHoverSignpostPosition(die) {
+        if (!die || !die.mesh || !hoverSignpost) return;
+        const geom = die.mesh.geometry;
+        let radius = 0.85;
+        if (geom) {
+          if (!geom.boundingSphere) geom.computeBoundingSphere();
+          if (geom.boundingSphere) radius = geom.boundingSphere.radius;
+        }
+        const worldPos = die.mesh.position.clone();
+        worldPos.y += radius * 0.95 + 0.15;
+
+        const proj = worldPos.clone().project(camera);
+        const screenX = (proj.x * 0.5 + 0.5) * window.innerWidth;
+        const screenY = (-(proj.y * 0.5) + 0.5) * window.innerHeight;
+
+        hoverSignpost.style.left = `${screenX.toFixed(1)}px`;
+        hoverSignpost.style.top = `${screenY.toFixed(1)}px`;
+      }
+
+      function showHoverSignpost(die) {
+        if (!hoverSignpost || !die) return;
+        currentHoveredDie = die;
+
+        let val = die.result;
+        if (val === null || val === undefined) {
+          if (typeof diceEngine._evaluateDieResult === 'function') {
+            val = diceEngine._evaluateDieResult(die);
+            die.result = val;
+          } else {
+            val = '?';
+          }
+        }
+
+        if (signpostDieType) signpostDieType.textContent = die.type.toUpperCase();
+        if (signpostDieVal) {
+          if (die.type === 'd20' && val === 20) {
+            signpostDieVal.style.color = '#50fa7b';
+            signpostDieVal.textContent = '20 ★';
+          } else if (die.type === 'd20' && val === 1) {
+            signpostDieVal.style.color = '#ff5555';
+            signpostDieVal.textContent = '1 💀';
+          } else {
+            signpostDieVal.style.color = 'var(--accent-gold)';
+            signpostDieVal.textContent = val;
+          }
+        }
+
+        updateHoverSignpostPosition(die);
+
+        hoverSignpost.style.display = 'flex';
+        void hoverSignpost.offsetWidth;
+        hoverSignpost.classList.remove('hidden');
+      }
+
+      function hideHoverSignpost() {
+        if (!hoverSignpost) return;
+        currentHoveredDie = null;
+        hoverSignpost.classList.add('hidden');
+        hoverSignpost.style.display = 'none';
+      }
+
+      diceEngine.on('rollStart', () => hideHoverSignpost());
 
       renderer.domElement.addEventListener('pointerdown', (e) => {
         pointerDownPos.x = e.clientX;
@@ -3224,75 +3333,118 @@
           raycaster.setFromCamera(mouse, camera);
 
           const activeMeshes = diceEngine.getActiveDice().map(d => d.mesh);
-          const hits = raycaster.intersectObjects(activeMeshes, false);
+          const hits = raycaster.intersectObjects(activeMeshes, true);
           if (hits.length > 0) {
-            pointerDownDie = diceEngine.getActiveDice().find(d => d.mesh === hits[0].object) || null;
+            const hitObj = hits[0].object;
+            pointerDownDie = diceEngine.getActiveDice().find(d => d.mesh === hitObj || d.outlineMesh === hitObj || (d.mesh && d.mesh.children.includes(hitObj))) || null;
           }
         }
       });
 
-      window.addEventListener('pointermove', (e) => {
-        if (!pointerDownDie) return;
-        const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+      function handlePointerMove(e) {
+        if (pointerDownDie) {
+          const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
 
-        if (!isDraggingDie && dist > 10) {
-          isDraggingDie = true;
-          if (controls) controls.enabled = false;
-          if (bagOverlay) {
-            bagOverlay.classList.add('drag-active');
-            const sub = document.getElementById('bag-sub-label');
-            if (sub) sub.textContent = 'Drop to save!';
+          if (!isDraggingDie && dist > 10) {
+            isDraggingDie = true;
+            hideHoverSignpost();
+            if (controls) controls.enabled = false;
+            if (bagOverlay) {
+              bagOverlay.classList.add('drag-active');
+              const sub = document.getElementById('bag-sub-label');
+              if (sub) sub.textContent = 'Drop to save!';
+            }
+            if (dragGhost) {
+              const matDef = DICE_MATERIALS[pointerDownDie.materialKey] || {};
+              const matName = matDef.name || pointerDownDie.materialKey || '';
+              const dragFaceColor = (pointerDownDie.styleOptions && pointerDownDie.styleOptions.faceFillColor) || matDef.baseColor || '#d4af37';
+              const dragEdgeColor = (pointerDownDie.styleOptions && pointerDownDie.styleOptions.edgeColor) || '#ffd700';
+              const dragFontColor = (pointerDownDie.styleOptions && pointerDownDie.styleOptions.fontColor) || '#ffffff';
+
+              let dragThumb = null;
+              try {
+                dragThumb = renderDieThumbnail(pointerDownDie.type, pointerDownDie.materialKey, pointerDownDie.styleOptions);
+              } catch (e) {}
+
+              const iconHtml = dragThumb
+                ? `<img src="${dragThumb}" style="width: 28px; height: 28px; object-fit: contain; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.8));" />`
+                : getPolyhedralDieIcon(pointerDownDie.type, {
+                    faceColor: dragFaceColor,
+                    edgeColor: dragEdgeColor,
+                    fontColor: dragFontColor,
+                    size: 26
+                  });
+
+              dragGhost.innerHTML = `
+                <div style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex: none;">
+                  ${iconHtml}
+                </div>
+                <div style="display: flex; flex-direction: column; line-height: 1.15;">
+                  <span style="font-weight: 700; color: #fff;">${pointerDownDie.type.toUpperCase()}</span>
+                  <span style="font-size: 9px; color: var(--accent);">${matName}</span>
+                </div>
+              `;
+              dragGhost.style.display = 'flex';
+            }
           }
-          if (dragGhost) {
-            const matDef = DICE_MATERIALS[pointerDownDie.materialKey] || {};
-            const matName = matDef.name || pointerDownDie.materialKey || '';
-            const dragFaceColor = (pointerDownDie.styleOptions && pointerDownDie.styleOptions.faceFillColor) || matDef.baseColor || '#d4af37';
-            const dragEdgeColor = (pointerDownDie.styleOptions && pointerDownDie.styleOptions.edgeColor) || '#ffd700';
-            const dragFontColor = (pointerDownDie.styleOptions && pointerDownDie.styleOptions.fontColor) || '#ffffff';
 
-            let dragThumb = null;
-            try {
-              dragThumb = renderDieThumbnail(pointerDownDie.type, pointerDownDie.materialKey, pointerDownDie.styleOptions);
-            } catch (e) {}
+          if (isDraggingDie) {
+            if (dragGhost) {
+              dragGhost.style.left = e.clientX + 'px';
+              dragGhost.style.top = e.clientY + 'px';
+            }
 
-            const iconHtml = dragThumb
-              ? `<img src="${dragThumb}" style="width: 28px; height: 28px; object-fit: contain; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.8));" />`
-              : getPolyhedralDieIcon(pointerDownDie.type, {
-                  faceColor: dragFaceColor,
-                  edgeColor: dragEdgeColor,
-                  fontColor: dragFontColor,
-                  size: 26
-                });
-
-            dragGhost.innerHTML = `
-              <div style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex: none;">
-                ${iconHtml}
-              </div>
-              <div style="display: flex; flex-direction: column; line-height: 1.15;">
-                <span style="font-weight: 700; color: #fff;">${pointerDownDie.type.toUpperCase()}</span>
-                <span style="font-size: 9px; color: var(--accent);">${matName}</span>
-              </div>
-            `;
-            dragGhost.style.display = 'flex';
+            if (bagOverlay) {
+              const rect = bagOverlay.getBoundingClientRect();
+              const isOver = e.clientX >= rect.left && e.clientX <= rect.right &&
+                             e.clientY >= rect.top && e.clientY <= rect.bottom;
+              bagOverlay.classList.toggle('drag-hover', isOver);
+              const sub = document.getElementById('bag-sub-label');
+              if (sub) sub.textContent = isOver ? '📥 Release to Store!' : 'Drop to save!';
+            }
+            return;
           }
         }
 
-        if (isDraggingDie) {
-          if (dragGhost) {
-            dragGhost.style.left = e.clientX + 'px';
-            dragGhost.style.top = e.clientY + 'px';
-          }
+        // Raycasting for settled die hover signpost
+        if (currentMode === 'tray' && !diceEngine.isRolling() && !isDraggingDie && (!e.buttons || e.buttons === 0)) {
+          const elem = document.elementFromPoint(e.clientX, e.clientY);
+          const isOverUI = elem && !!elem.closest('#left-panel, .app-header, .dice-bag-overlay, .modal-backdrop, .modal, #roll-action-container, #status-pill, .context-menu');
 
-          if (bagOverlay) {
-            const rect = bagOverlay.getBoundingClientRect();
-            const isOver = e.clientX >= rect.left && e.clientX <= rect.right &&
-                           e.clientY >= rect.top && e.clientY <= rect.bottom;
-            bagOverlay.classList.toggle('drag-hover', isOver);
-            const sub = document.getElementById('bag-sub-label');
-            if (sub) sub.textContent = isOver ? '📥 Release to Store!' : 'Drop to save!';
+          if (!isOverUI) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            const mouse = new THREE.Vector2(
+              ((e.clientX - rect.left) / rect.width) * 2 - 1,
+              -((e.clientY - rect.top) / rect.height) * 2 + 1
+            );
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            const activeDice = diceEngine.getActiveDice();
+            const meshes = activeDice.map(d => d.mesh).filter(Boolean);
+            const hits = raycaster.intersectObjects(meshes, true);
+
+            if (hits.length > 0) {
+              const hitObj = hits[0].object;
+              const hitDie = activeDice.find(d => d.mesh === hitObj || d.outlineMesh === hitObj || (d.mesh && d.mesh.children.includes(hitObj)));
+              if (hitDie) {
+                showHoverSignpost(hitDie);
+              } else {
+                hideHoverSignpost();
+              }
+            } else {
+              hideHoverSignpost();
+            }
+          } else {
+            hideHoverSignpost();
           }
+        } else if (diceEngine.isRolling()) {
+          hideHoverSignpost();
         }
-      });
+      }
+
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('mousemove', handlePointerMove);
 
       window.addEventListener('pointerup', (e) => {
         if (isDraggingDie && pointerDownDie) {
@@ -3462,8 +3614,19 @@
       document.getElementById('tab-inspector').addEventListener('click', () => switchMode('inspector'));
 
       document.getElementById('clear-pool-btn').addEventListener('click', () => {
+        diceEngine.clearActiveDice();
         diceEngine.setDicePool([]);
         updatePoolChipsUI();
+        updateMaterialUI();
+        updateFaceStyleUI();
+        const banner = document.getElementById('result-banner');
+        if (banner) banner.classList.remove('visible');
+        const statusText = document.getElementById('status-text');
+        if (statusText) statusText.textContent = 'Empty';
+        const totalVal = document.getElementById('result-total-val');
+        if (totalVal) totalVal.textContent = '0';
+        if (typeof hideHoverSignpost === 'function') hideHoverSignpost();
+        scheduleAutoSave();
       });
 
       document.querySelectorAll('#dice-selector .die-btn').forEach(btn => {
@@ -4472,6 +4635,14 @@ dice.on('rollComplete', (res) => {
             }
           }
           diceEngine.update(deltaTime);
+
+          if (currentHoveredDie) {
+            if (diceEngine.isRolling() || !currentHoveredDie.mesh || !currentHoveredDie.mesh.parent) {
+              hideHoverSignpost();
+            } else {
+              updateHoverSignpostPosition(currentHoveredDie);
+            }
+          }
         } else if (currentMode === 'inspector' && inspectorDieMesh) {
           if (isCameraTransitioning) {
             camera.position.lerp(inspectorCamPos, 0.08);
