@@ -4117,7 +4117,7 @@ dice.on('rollComplete', (res) => {
           const isHttps = window.location.protocol === 'https:';
           const proto = isHttps ? 'wss:' : 'ws:';
           const host = window.location.hostname || 'localhost';
-          const port = (window.location.port === '3000') ? '3000' : '3000';
+          const port = window.location.port || '4322';
           return `${proto}//${host}:${port}`;
         },
 
@@ -4137,7 +4137,7 @@ dice.on('rollComplete', (res) => {
           try {
             this.ws = new WebSocket(wsUrl);
           } catch (e) {
-            showToast('❌ Could not connect to multiplayer server on port 3000');
+            showToast(`❌ Could not connect to multiplayer server on port ${window.location.port || '4322'}`);
             if (statusEl) statusEl.textContent = 'Connection failed';
             return;
           }
