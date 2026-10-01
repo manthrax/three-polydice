@@ -2956,6 +2956,60 @@ export class PolyDice {
     return null;
   }
 
+  /**
+   * Spawns an entire set of dice (e.g. RPG 7, Exotic 8, 5d6) directly into the active 3D tray physics simulation and pool.
+   * @param {Array<string>} types Array of die types (e.g. ['d4', 'd6', 'd8', 'd10', 'd10', 'd12', 'd20'])
+   * @param {string} material Material key
+   * @param {Object} style Custom face/edge style options
+   * @returns {Array<Object>} Active die records
+   */
+  spawnDiceSetIntoTray(types, material = null, style = null) {
+    if (!Array.isArray(types) || types.length === 0) return [];
+    if (this.audioEnabled) {
+      this.soundSystem.init();
+      if (typeof this.soundSystem.playSpawnCue === 'function') {
+        this.soundSystem.playSpawnCue();
+      }
+    }
+    if (this.isShowcase) {
+      this.exitShowcaseMode();
+    }
+
+    const spawnedRecords = [];
+    const baseSpawnIndex = this.activeDiceInstances.length;
+    const totalSpawning = types.length;
+
+    types.forEach((type, i) => {
+      this.addDieToPool(type, material, style);
+      if (this.physicsWorld && this.group) {
+        const spawnIndex = baseSpawnIndex + i;
+        const customSpawnPos = {
+          x: ((i % 4) - 1.5) * 1.2 + (Math.random() - 0.5) * 0.4,
+          y: 5.2 + Math.floor(i / 4) * 0.6 + Math.random() * 0.8,
+          z: (Math.floor(i / 4) - 0.8) * 1.2 + (Math.random() - 0.5) * 0.4
+        };
+        const record = this._createPhysicsDie(type, spawnIndex, baseSpawnIndex + totalSpawning, 0.85, null, customSpawnPos);
+        spawnedRecords.push(record);
+      }
+    });
+
+    // Wake up all bodies so physics simulates the newly dropped dice and any jostled dice
+    this.activeDiceInstances.forEach(d => {
+      if (d.body) {
+        d.body.activate(true);
+      }
+      d.settled = false;
+      d.settleFrames = 0;
+    });
+
+    this.isRollingState = true;
+    this.rollStartTime = performance.now();
+
+    this.emit('diceSetSpawned', { dice: spawnedRecords });
+    this.emit('rollStart', { pool: [...this.dicePool], power: 0.85 });
+    return spawnedRecords;
+  }
+
   removeDieFromPool(index) {
     if (index >= 0 && index < this.dicePool.length) {
       this.dicePool.splice(index, 1);

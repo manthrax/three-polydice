@@ -1479,7 +1479,7 @@
       border: 1px solid rgba(97, 175, 239, 0.35);
       border-radius: 8px;
       padding: 5px;
-      min-width: 170px;
+      min-width: 220px;
       max-height: 240px;
       overflow-y: auto;
       box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85), 0 0 16px rgba(97, 175, 239, 0.18);

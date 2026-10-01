@@ -926,23 +926,15 @@
         <span id="bag-ctx-title">Die Options</span>
       </div>
       <div class="bag-ctx-item" id="bag-ctx-spawn-default">
-        <span>🎲</span> <span>Spawn to Tray (Original)</span>
+        <span>🎲</span> <span>Spawn This Die</span>
       </div>
       <div class="bag-ctx-divider"></div>
       
-      <!-- Spawn with Material Preset -->
-      <div class="bag-ctx-item has-submenu" id="bag-ctx-mat-parent">
-        <span>✨</span> <span>Spawn with Material Preset</span> <span class="bag-ctx-arrow">▸</span>
-        <div class="bag-ctx-submenu" id="bag-ctx-mat-submenu">
-          <!-- Material preset items dynamically generated -->
-        </div>
-      </div>
-
-      <!-- Spawn with Edge Style Preset -->
-      <div class="bag-ctx-item has-submenu" id="bag-ctx-edge-parent">
-        <span>🎨</span> <span>Spawn with Edge Preset</span> <span class="bag-ctx-arrow">▸</span>
-        <div class="bag-ctx-submenu" id="bag-ctx-edge-submenu">
-          <!-- Edge preset items dynamically generated -->
+      <!-- Spawn Dice Set Preset Submenu (RPG 7, Exotic 8, 5d6, etc.) -->
+      <div class="bag-ctx-item has-submenu" id="bag-ctx-preset-parent">
+        <span>📦</span> <span>Spawn Preset</span> <span class="bag-ctx-arrow">▸</span>
+        <div class="bag-ctx-submenu" id="bag-ctx-preset-submenu">
+          <!-- Populated dynamically with RPG 7, Exotic 8, 5d6, etc. -->
         </div>
       </div>
 
@@ -3046,26 +3038,67 @@
         showToast(`✨ Spawned ${item.type.toUpperCase()} (${matName}) into Tray!`);
       }
 
-      // Presets catalog matching the left app panel
-      const MATERIAL_PRESETS = [
-        { key: 'obsidian', name: 'Obsidian', color: '#1c2027', border: '#4a5260' },
-        { key: 'gold', name: 'Gold', color: 'linear-gradient(135deg, #f5d061, #b8860b)', border: '#ffe599' },
-        { key: 'silver', name: 'Silver', color: 'linear-gradient(135deg, #ffffff, #8898a8)', border: '#d8e8f8' },
-        { key: 'ruby', name: 'Ruby', color: 'radial-gradient(circle, #ff3355, #880018)', border: '#ff7799' },
-        { key: 'emerald', name: 'Emerald', color: 'radial-gradient(circle, #19a56f, #093b26)', border: '#45e0a0' },
-        { key: 'sapphire', name: 'Sapphire', color: 'radial-gradient(circle, #2d68c4, #0b1a3d)', border: '#66a5ff' },
-        { key: 'pearl', name: 'Pearl', color: 'radial-gradient(circle, #ffffff, #eed8ea)', border: '#ded0f8' },
-        { key: 'cyber', name: 'Cyber', color: '#0a0e17', border: '#00f7ff' },
-        { key: 'paladin', name: 'Paladin', color: '#f7f4ea', border: '#d4af37' }
+      // Presets for sets of dice matching the left app panel & tabletop RPG standards
+      const DICE_SET_PRESETS = [
+        {
+          key: 'rpg7',
+          name: 'RPG 7',
+          icon: '⚔️',
+          desc: 'd4, d6, d8, 2xd10, d12, d20',
+          dice: ['d4', 'd6', 'd8', 'd10', 'd10', 'd12', 'd20']
+        },
+        {
+          key: 'exotic8',
+          name: 'Exotic 8',
+          icon: '🔮',
+          desc: 'd14, d16, d24, d30, d48, d60, d100, d120',
+          dice: ['d14', 'd16', 'd24', 'd30', 'd48', 'd60', 'd100', 'd120']
+        },
+        {
+          key: 'all14',
+          name: 'All 14',
+          icon: '👑',
+          desc: 'Full polyhedral set (d4 through d120)',
+          dice: ['d4', 'd6', 'd8', 'd10', 'd12', 'd14', 'd16', 'd20', 'd24', 'd30', 'd48', 'd60', 'd100', 'd120']
+        },
+        {
+          key: '5d6',
+          name: '5d6',
+          icon: '🎲',
+          desc: 'Five d6 dice',
+          dice: ['d6', 'd6', 'd6', 'd6', 'd6']
+        },
+        {
+          key: '4d6',
+          name: '4d6',
+          icon: '📊',
+          desc: 'Ability score roll',
+          dice: ['d6', 'd6', 'd6', 'd6']
+        },
+        {
+          key: '2d20',
+          name: '2d20',
+          icon: '🎯',
+          desc: 'Advantage / Disadvantage roll',
+          dice: ['d20', 'd20']
+        }
       ];
 
-      const EDGE_PRESETS = [
-        { key: 'none', name: 'Standard (None)', edgeColor: null, fontColor: null, border: '#ffffff33' },
-        { key: 'gold', name: 'Gold Inlay', edgeColor: '#ffd700', fontColor: '#ffd700', border: '#ffd700' },
-        { key: 'cyber', name: 'Cyber Neon', edgeColor: '#00f7ff', fontColor: '#ffffff', border: '#00f7ff' },
-        { key: 'crimson', name: 'Ruby Crimson', edgeColor: '#ff2a4b', fontColor: '#ffeaee', border: '#ff2a4b' },
-        { key: 'white', name: 'Paladin Ivory', edgeColor: '#c59b27', fontColor: '#1c160e', border: '#f8f5eb' }
-      ];
+      function spawnDiceSetPreset(preset, fromItem = null) {
+        if (currentMode !== 'tray') {
+          switchMode('tray');
+        }
+        const mat = fromItem ? (fromItem.materialKey || currentMaterial) : currentMaterial;
+        const style = fromItem ? Object.assign({}, fromItem.styleOptions || {}) : null;
+
+        diceEngine.spawnDiceSetIntoTray(preset.dice, mat, style);
+        updatePoolChipsUI();
+        updateMaterialUI();
+        updateFaceStyleUI();
+        scheduleAutoSave();
+        const matName = (DICE_MATERIALS[mat] || {}).name || mat;
+        showToast(`✨ Spawned ${preset.name} (${matName}) into Tray!`);
+      }
 
       const ctxMenu = document.getElementById('bag-die-context-menu');
       let activeCtxItem = null;
@@ -3094,37 +3127,32 @@
         const titleEl = document.getElementById('bag-ctx-title');
         if (titleEl) titleEl.textContent = `${item.name || item.type.toUpperCase()}`;
 
-        // Populate Material Presets Submenu
-        const matSubmenu = document.getElementById('bag-ctx-mat-submenu');
-        if (matSubmenu) {
-          matSubmenu.innerHTML = '';
-          MATERIAL_PRESETS.forEach(p => {
+        // Populate Dice Set Presets Submenu (RPG 7, Exotic 8, 5d6, etc.)
+        const presetSubmenu = document.getElementById('bag-ctx-preset-submenu');
+        if (presetSubmenu) {
+          presetSubmenu.innerHTML = '';
+          DICE_SET_PRESETS.forEach(p => {
             const sub = document.createElement('div');
             sub.className = 'bag-ctx-sub-item';
-            sub.innerHTML = `<span class="bag-ctx-dot" style="background: ${p.color}; border: 1px solid ${p.border};"></span> <span>${p.name}</span>`;
+            sub.style.display = 'flex';
+            sub.style.flexDirection = 'column';
+            sub.style.alignItems = 'flex-start';
+            sub.style.gap = '2px';
+            sub.style.padding = '6px 9px';
+            sub.innerHTML = `
+              <div style="display: flex; align-items: center; gap: 7px; width: 100%;">
+                <span>${p.icon}</span>
+                <span style="font-weight: 700; color: #fff;">${p.name}</span>
+                <span style="margin-left: auto; font-size: 8.5px; color: var(--accent); font-weight: 600;">${p.dice.length} dice</span>
+              </div>
+              <div style="font-size: 8.5px; color: var(--text-muted); padding-left: 21px;">${p.desc}</div>
+            `;
             sub.addEventListener('click', (ev) => {
               ev.stopPropagation();
               closeBagDieContextMenu();
-              spawnDieFromBag(item, { material: p.key });
+              spawnDiceSetPreset(p, item);
             });
-            matSubmenu.appendChild(sub);
-          });
-        }
-
-        // Populate Edge Style Presets Submenu
-        const edgeSubmenu = document.getElementById('bag-ctx-edge-submenu');
-        if (edgeSubmenu) {
-          edgeSubmenu.innerHTML = '';
-          EDGE_PRESETS.forEach(p => {
-            const sub = document.createElement('div');
-            sub.className = 'bag-ctx-sub-item';
-            sub.innerHTML = `<span class="bag-ctx-dot" style="background: ${p.border};"></span> <span>${p.name}</span>`;
-            sub.addEventListener('click', (ev) => {
-              ev.stopPropagation();
-              closeBagDieContextMenu();
-              spawnDieFromBag(item, { edgePreset: p.key });
-            });
-            edgeSubmenu.appendChild(sub);
+            presetSubmenu.appendChild(sub);
           });
         }
 
