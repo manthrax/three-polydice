@@ -1811,6 +1811,38 @@ class DiceAudioSystem {
     woodOsc.stop(now + 0.046);
   }
 
+  playSpawnCue(pos = { x: 0, y: 3, z: 0 }) {
+    if (!this.enabled || !this.ctx) return;
+    try {
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(660, now + 0.07);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.14);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.22, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+
+      const panner = this._createPanner(pos, now);
+      if (panner) {
+        osc.connect(gain);
+        gain.connect(panner);
+      } else {
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+      }
+
+      osc.start(now);
+      osc.stop(now + 0.23);
+    } catch (_) {}
+  }
+
   dispose() {
     this.enabled = false;
     if (this.ctx && this.ctx.state !== 'closed' && !this.listener) {
@@ -2886,10 +2918,39 @@ export class PolyDice {
    */
   spawnDieIntoTray(type, material = null, style = null) {
     this.addDieToPool(type, material, style);
-    if (this.physicsWorld && this.group && this.activeDiceInstances.length > 0) {
+    if (this.physicsWorld && this.group) {
+      if (this.audioEnabled) {
+        this.soundSystem.init();
+        if (typeof this.soundSystem.playSpawnCue === 'function') {
+          this.soundSystem.playSpawnCue();
+        }
+      }
+      if (this.isShowcase) {
+        this.exitShowcaseMode();
+      }
+
       const spawnIndex = this.activeDiceInstances.length;
-      const dieRecord = this._createPhysicsDie(type, spawnIndex, spawnIndex + 1, 0.8, null);
+      const customSpawnPos = {
+        x: (Math.random() - 0.5) * 3.6,
+        y: 5.4 + Math.random() * 1.2,
+        z: (Math.random() - 0.5) * 3.2
+      };
+      const dieRecord = this._createPhysicsDie(type, spawnIndex, spawnIndex + 1, 0.85, null, customSpawnPos);
+
+      // Wake up all bodies so physics simulates the newly dropped die and any jostled dice
+      this.activeDiceInstances.forEach(d => {
+        if (d.body) {
+          d.body.activate(true);
+        }
+        d.settled = false;
+        d.settleFrames = 0;
+      });
+
+      this.isRollingState = true;
+      this.rollStartTime = performance.now();
+
       this.emit('dieSpawned', { die: dieRecord, index: spawnIndex });
+      this.emit('rollStart', { pool: [...this.dicePool], power: 0.85, spawnedDie: dieRecord });
       return dieRecord;
     }
     return null;
@@ -3004,7 +3065,7 @@ export class PolyDice {
     this.activeDiceInstances.length = 0;
   }
 
-  _createPhysicsDie(type, spawnIndex, totalDice, power = 1.0, targetValue = null) {
+  _createPhysicsDie(type, spawnIndex, totalDice, power = 1.0, targetValue = null, customSpawnPos = null) {
     const matKey = (this.poolMaterials && this.poolMaterials[spawnIndex]) || this.materialKey;
     const dieStyle = (this.poolStyles && this.poolStyles[spawnIndex]) || null;
     const opts = Object.assign({ material: matKey }, dieStyle || {});
@@ -3020,9 +3081,9 @@ export class PolyDice {
     const row = Math.floor(spawnIndex / totalCol);
 
     const spreadX = (col - (totalCol - 1) / 2) * 1.4 + (Math.random() - 0.5) * 0.3;
-    const spawnX = Math.max(-4.2, Math.min(4.2, spreadX));
-    const spawnY = Math.min(7.8, 4.4 + (power - 1.0) * 1.6 + row * 0.4 + Math.random() * 0.3);
-    const spawnZ = Math.min(4.4, 1.8 + row * 0.55 + Math.random() * 0.3);
+    const spawnX = customSpawnPos ? customSpawnPos.x : Math.max(-4.2, Math.min(4.2, spreadX));
+    const spawnY = customSpawnPos ? customSpawnPos.y : Math.min(7.8, 4.4 + (power - 1.0) * 1.6 + row * 0.4 + Math.random() * 0.3);
+    const spawnZ = customSpawnPos ? customSpawnPos.z : Math.min(4.4, 1.8 + row * 0.55 + Math.random() * 0.3);
 
     const initialQuat = new this.THREE.Quaternion().setFromEuler(new this.THREE.Euler(
       Math.random() * Math.PI * 2,
@@ -3060,12 +3121,14 @@ export class PolyDice {
     body.setCcdSweptSphereRadius(0.5);
 
     const baseThrowSpeed = 7.5 + (power - 1.0) * 14.0;
-    const fanAngle = -Math.PI / 2 + (spawnX / 5.5) * 0.45 + (Math.random() - 0.5) * 0.3;
-    const dieSpeed = baseThrowSpeed + (Math.random() - 0.5) * 3.0;
+    const fanAngle = customSpawnPos
+      ? (Math.random() * Math.PI * 2)
+      : (-Math.PI / 2 + (spawnX / 5.5) * 0.45 + (Math.random() - 0.5) * 0.3);
+    const dieSpeed = customSpawnPos ? (1.5 + Math.random() * 2.5) : (baseThrowSpeed + (Math.random() - 0.5) * 3.0);
 
     const linVelX = Math.cos(fanAngle) * dieSpeed;
     const linVelZ = Math.sin(fanAngle) * dieSpeed;
-    const linVelY = (-3.2 - Math.random() * 2.5) * (0.85 + power * 0.55);
+    const linVelY = customSpawnPos ? (-3.5 - Math.random() * 2.0) : ((-3.2 - Math.random() * 2.5) * (0.85 + power * 0.55));
     body.setLinearVelocity(new this.AmmoLib.btVector3(linVelX, linVelY, linVelZ));
 
     const angVel = (16 + Math.random() * 16) * (0.8 + power * 0.6);
@@ -3075,7 +3138,7 @@ export class PolyDice {
       (Math.random() - 0.5) * angVel
     ));
 
-    body.setActivationState(4);
+    body.setActivationState(1); // ACTIVE_TAG
     this.physicsWorld.addRigidBody(body);
 
     const outlineMat = new this.THREE.MeshBasicMaterial({

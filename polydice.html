@@ -874,8 +874,8 @@
           <button id="bag-add-selected-btn" class="small-btn" style="padding: 4px 10px; font-size: 10px; background: rgba(97, 175, 239, 0.15); border-color: var(--accent); color: var(--accent); font-weight: 600;" title="Store currently selected or configured die in bag">
             ➕ Store Current Die in Bag
           </button>
-          <button id="bag-clear-btn" class="small-btn" style="padding: 4px 10px; font-size: 10px; color: #eb5757; border-color: rgba(235, 87, 87, 0.3);" title="Remove all dice from bag">
-            🗑️ Clear Bag
+          <button id="bag-export-btn" class="small-btn" style="padding: 4px 10px; font-size: 10px; background: rgba(152, 195, 121, 0.15); border-color: rgba(152, 195, 121, 0.4); color: #98c379; font-weight: 600;" title="Export your saved dice bag to a portable JSON file">
+            💾 Export Bag
           </button>
         </div>
 
@@ -883,6 +883,72 @@
         <div id="dice-bag-grid" class="dice-bag-grid">
           <!-- Rendered dynamically -->
         </div>
+      </div>
+    </div>
+
+    <!-- Drag-and-drop JSON import overlay -->
+    <div id="json-drop-overlay" class="json-drop-overlay">
+      <div class="json-drop-card">
+        <span style="font-size: 42px;">📥</span>
+        <div style="font-size: 18px; font-weight: 700; color: #fff;">Drop JSON to Import Dice Bag</div>
+        <div style="font-size: 11.5px; color: var(--text-muted); text-align: center; max-width: 320px;">
+          Release the file anywhere to append custom polyhedral dice to your local collection
+        </div>
+      </div>
+    </div>
+
+    <!-- Import Confirmation Modal -->
+    <div id="import-confirm-modal">
+      <div class="modal-card" style="width: 440px; max-width: 90vw;">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">📥</span>
+            <div class="modal-title" style="margin: 0; font-size: 15px;">Import Dice into Bag?</div>
+          </div>
+          <button class="modal-close-btn" id="close-import-btn">✕</button>
+        </div>
+        <div style="padding: 14px 16px; font-size: 11.5px; line-height: 1.5; color: #d0d7de;">
+          <div id="import-confirm-msg">Found <b>0 dice</b> in JSON. Append them to your current Dice Bag?</div>
+          <div id="import-preview-list" class="import-preview-list" style="margin-top: 10px; max-height: 140px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; background: rgba(0,0,0,0.3); border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+            <!-- Preview chips inserted here -->
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);">
+          <button id="import-cancel-btn" class="small-btn" style="padding: 6px 14px;">Cancel</button>
+          <button id="import-confirm-btn" class="small-btn" style="padding: 6px 14px; background: #238636; border-color: #2ea043; color: #fff; font-weight: 700;">Append to Bag</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right-Click Context Menu for Dice in Bag -->
+    <div id="bag-die-context-menu" class="bag-ctx-menu">
+      <div class="bag-ctx-header" id="bag-ctx-header">
+        <span id="bag-ctx-title">Die Options</span>
+      </div>
+      <div class="bag-ctx-item" id="bag-ctx-spawn-default">
+        <span>🎲</span> <span>Spawn to Tray (Original)</span>
+      </div>
+      <div class="bag-ctx-divider"></div>
+      
+      <!-- Spawn with Material Preset -->
+      <div class="bag-ctx-item has-submenu" id="bag-ctx-mat-parent">
+        <span>✨</span> <span>Spawn with Material Preset</span> <span class="bag-ctx-arrow">▸</span>
+        <div class="bag-ctx-submenu" id="bag-ctx-mat-submenu">
+          <!-- Material preset items dynamically generated -->
+        </div>
+      </div>
+
+      <!-- Spawn with Edge Style Preset -->
+      <div class="bag-ctx-item has-submenu" id="bag-ctx-edge-parent">
+        <span>🎨</span> <span>Spawn with Edge Preset</span> <span class="bag-ctx-arrow">▸</span>
+        <div class="bag-ctx-submenu" id="bag-ctx-edge-submenu">
+          <!-- Edge preset items dynamically generated -->
+        </div>
+      </div>
+
+      <div class="bag-ctx-divider"></div>
+      <div class="bag-ctx-item danger" id="bag-ctx-delete">
+        <span>🗑️</span> <span>Remove from Bag</span>
       </div>
     </div>
 
@@ -2910,6 +2976,13 @@
             spawnDieFromBag(item);
           });
 
+          // Right-click opens Spawn Preset context menu
+          card.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openBagDieContextMenu(e, item);
+          });
+
           // Delete button
           card.querySelector('.bag-die-delete-btn').addEventListener('click', async (e) => {
             e.stopPropagation();
@@ -2922,13 +2995,179 @@
         });
       }
 
-      function spawnDieFromBag(item) {
-        diceEngine.spawnDieIntoTray(item.type, item.materialKey, item.styleOptions);
+      function spawnDieFromBag(item, override = null) {
+        if (currentMode !== 'tray') {
+          switchMode('tray');
+        }
+        let mat = item.materialKey || currentMaterial;
+        let style = Object.assign({}, item.styleOptions || {});
+
+        if (override) {
+          if (override.material) {
+            mat = override.material;
+          }
+          if (override.edgePreset) {
+            const ep = override.edgePreset;
+            if (ep === 'none') {
+              style = Object.assign(style, {
+                edgeColor: null, edgeEmbossDepth: 0.0, faceFillColor: null, faceOpacity: 1.0,
+                fontColor: null, fontEmbossDepth: -1.0, fontShadowColor: null, fontShadowRadius: 1.0, bevelColor: null
+              });
+            } else if (ep === 'gold') {
+              style = Object.assign(style, {
+                edgeColor: '#ffd700', edgeEmbossDepth: 1.0, faceFillColor: '#14110c', faceOpacity: 1.0,
+                fontColor: '#ffd700', fontEmbossDepth: -1.0, fontShadowColor: '#382604', fontShadowRadius: 1.2, bevelColor: '#d4af37'
+              });
+            } else if (ep === 'cyber') {
+              style = Object.assign(style, {
+                edgeColor: '#00f7ff', edgeEmbossDepth: 1.0, faceFillColor: '#090e1c', faceOpacity: 1.0,
+                fontColor: '#ffffff', fontEmbossDepth: -1.0, fontShadowColor: '#003844', fontShadowRadius: 1.5, bevelColor: '#00f7ff'
+              });
+            } else if (ep === 'crimson') {
+              style = Object.assign(style, {
+                edgeColor: '#ff2a4b', edgeEmbossDepth: 1.0, faceFillColor: '#160306', faceOpacity: 1.0,
+                fontColor: '#ffeaee', fontEmbossDepth: -1.0, fontShadowColor: '#45000c', fontShadowRadius: 1.0, bevelColor: '#ff2a4b'
+              });
+            } else if (ep === 'white') {
+              style = Object.assign(style, {
+                edgeColor: '#c59b27', edgeEmbossDepth: 1.0, faceFillColor: '#f8f5eb', faceOpacity: 1.0,
+                fontColor: '#1c160e', fontEmbossDepth: -1.0, fontShadowColor: '#baa888', fontShadowRadius: 0.8, bevelColor: '#2b2318'
+              });
+            }
+          }
+        }
+
+        diceEngine.spawnDieIntoTray(item.type, mat, style);
         updatePoolChipsUI();
         updateMaterialUI();
         updateFaceStyleUI();
         scheduleAutoSave();
-        showToast(`✨ Spawned ${item.name} into Tray!`);
+        const matName = (DICE_MATERIALS[mat] || {}).name || mat;
+        showToast(`✨ Spawned ${item.type.toUpperCase()} (${matName}) into Tray!`);
+      }
+
+      // Presets catalog matching the left app panel
+      const MATERIAL_PRESETS = [
+        { key: 'obsidian', name: 'Obsidian', color: '#1c2027', border: '#4a5260' },
+        { key: 'gold', name: 'Gold', color: 'linear-gradient(135deg, #f5d061, #b8860b)', border: '#ffe599' },
+        { key: 'silver', name: 'Silver', color: 'linear-gradient(135deg, #ffffff, #8898a8)', border: '#d8e8f8' },
+        { key: 'ruby', name: 'Ruby', color: 'radial-gradient(circle, #ff3355, #880018)', border: '#ff7799' },
+        { key: 'emerald', name: 'Emerald', color: 'radial-gradient(circle, #19a56f, #093b26)', border: '#45e0a0' },
+        { key: 'sapphire', name: 'Sapphire', color: 'radial-gradient(circle, #2d68c4, #0b1a3d)', border: '#66a5ff' },
+        { key: 'pearl', name: 'Pearl', color: 'radial-gradient(circle, #ffffff, #eed8ea)', border: '#ded0f8' },
+        { key: 'cyber', name: 'Cyber', color: '#0a0e17', border: '#00f7ff' },
+        { key: 'paladin', name: 'Paladin', color: '#f7f4ea', border: '#d4af37' }
+      ];
+
+      const EDGE_PRESETS = [
+        { key: 'none', name: 'Standard (None)', edgeColor: null, fontColor: null, border: '#ffffff33' },
+        { key: 'gold', name: 'Gold Inlay', edgeColor: '#ffd700', fontColor: '#ffd700', border: '#ffd700' },
+        { key: 'cyber', name: 'Cyber Neon', edgeColor: '#00f7ff', fontColor: '#ffffff', border: '#00f7ff' },
+        { key: 'crimson', name: 'Ruby Crimson', edgeColor: '#ff2a4b', fontColor: '#ffeaee', border: '#ff2a4b' },
+        { key: 'white', name: 'Paladin Ivory', edgeColor: '#c59b27', fontColor: '#1c160e', border: '#f8f5eb' }
+      ];
+
+      const ctxMenu = document.getElementById('bag-die-context-menu');
+      let activeCtxItem = null;
+
+      function closeBagDieContextMenu() {
+        if (ctxMenu) {
+          ctxMenu.classList.remove('visible');
+          ctxMenu.style.display = 'none';
+          activeCtxItem = null;
+        }
+      }
+
+      window.addEventListener('click', (e) => {
+        if (ctxMenu && ctxMenu.classList.contains('visible') && !ctxMenu.contains(e.target)) {
+          closeBagDieContextMenu();
+        }
+      });
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeBagDieContextMenu();
+      });
+
+      function openBagDieContextMenu(e, item) {
+        if (!ctxMenu) return;
+        activeCtxItem = item;
+
+        const titleEl = document.getElementById('bag-ctx-title');
+        if (titleEl) titleEl.textContent = `${item.name || item.type.toUpperCase()}`;
+
+        // Populate Material Presets Submenu
+        const matSubmenu = document.getElementById('bag-ctx-mat-submenu');
+        if (matSubmenu) {
+          matSubmenu.innerHTML = '';
+          MATERIAL_PRESETS.forEach(p => {
+            const sub = document.createElement('div');
+            sub.className = 'bag-ctx-sub-item';
+            sub.innerHTML = `<span class="bag-ctx-dot" style="background: ${p.color}; border: 1px solid ${p.border};"></span> <span>${p.name}</span>`;
+            sub.addEventListener('click', (ev) => {
+              ev.stopPropagation();
+              closeBagDieContextMenu();
+              spawnDieFromBag(item, { material: p.key });
+            });
+            matSubmenu.appendChild(sub);
+          });
+        }
+
+        // Populate Edge Style Presets Submenu
+        const edgeSubmenu = document.getElementById('bag-ctx-edge-submenu');
+        if (edgeSubmenu) {
+          edgeSubmenu.innerHTML = '';
+          EDGE_PRESETS.forEach(p => {
+            const sub = document.createElement('div');
+            sub.className = 'bag-ctx-sub-item';
+            sub.innerHTML = `<span class="bag-ctx-dot" style="background: ${p.border};"></span> <span>${p.name}</span>`;
+            sub.addEventListener('click', (ev) => {
+              ev.stopPropagation();
+              closeBagDieContextMenu();
+              spawnDieFromBag(item, { edgePreset: p.key });
+            });
+            edgeSubmenu.appendChild(sub);
+          });
+        }
+
+        // Default spawn button
+        const defSpawn = document.getElementById('bag-ctx-spawn-default');
+        if (defSpawn) {
+          defSpawn.onclick = (ev) => {
+            ev.stopPropagation();
+            closeBagDieContextMenu();
+            spawnDieFromBag(item);
+          };
+        }
+
+        // Delete button
+        const delBtn = document.getElementById('bag-ctx-delete');
+        if (delBtn) {
+          delBtn.onclick = async (ev) => {
+            ev.stopPropagation();
+            closeBagDieContextMenu();
+            await StorageManager.removeDieFromBag(item.id);
+            renderDiceBagGrid();
+            showToast(`🗑️ Removed ${item.name} from Bag`);
+          };
+        }
+
+        // Position menu safely inside screen bounds
+        ctxMenu.style.display = 'flex';
+        ctxMenu.classList.add('visible');
+
+        const menuWidth = 200;
+        const menuHeight = 230;
+        let posX = e.clientX;
+        let posY = e.clientY;
+
+        if (posX + menuWidth > window.innerWidth - 10) {
+          posX = window.innerWidth - menuWidth - 10;
+        }
+        if (posY + menuHeight > window.innerHeight - 10) {
+          posY = window.innerHeight - menuHeight - 10;
+        }
+
+        ctxMenu.style.left = `${posX}px`;
+        ctxMenu.style.top = `${posY}px`;
       }
 
       // =========================================================================
@@ -3379,17 +3618,187 @@
         });
       }
 
-      const bagClearBtn = document.getElementById('bag-clear-btn');
-      if (bagClearBtn) {
-        bagClearBtn.addEventListener('click', async () => {
-          if (confirm('Clear all dice from your bag?')) {
-            await StorageManager.clearBag();
-            renderDiceBagGrid();
-            updateDiceBagBadge();
-            showToast('🗑️ Cleared Dice Bag');
+      // Export Bag to JSON
+      const bagExportBtn = document.getElementById('bag-export-btn');
+      if (bagExportBtn) {
+        bagExportBtn.addEventListener('click', async () => {
+          const bag = await StorageManager.getBagDice();
+          if (!bag || bag.length === 0) {
+            showToast('⚠️ Dice bag is empty - nothing to export');
+            return;
           }
+
+          const exportItems = bag.map(item => ({
+            type: item.type,
+            materialKey: item.materialKey,
+            styleOptions: item.styleOptions || {},
+            name: item.name || `${item.type.toUpperCase()} • ${item.materialKey}`
+          }));
+
+          const exportData = {
+            app: 'PolyDice',
+            version: '1.0',
+            exportedAt: new Date().toISOString(),
+            bag: exportItems
+          };
+
+          const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          const dateStr = new Date().toISOString().slice(0, 10);
+          a.download = `polydice_bag_${dateStr}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast(`💾 Exported ${bag.length} dice to JSON!`);
         });
       }
+
+      // Drag & Drop JSON Import
+      let dropDragCounter = 0;
+      const jsonDropOverlay = document.getElementById('json-drop-overlay');
+      const importModal = document.getElementById('import-confirm-modal');
+      let pendingImportDice = [];
+
+      window.addEventListener('dragenter', (e) => {
+        if (e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+          dropDragCounter++;
+          if (jsonDropOverlay) jsonDropOverlay.classList.add('active');
+        }
+      });
+
+      window.addEventListener('dragleave', (e) => {
+        dropDragCounter--;
+        if (dropDragCounter <= 0) {
+          dropDragCounter = 0;
+          if (jsonDropOverlay) jsonDropOverlay.classList.remove('active');
+        }
+      });
+
+      window.addEventListener('dragover', (e) => {
+        if (e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+          e.preventDefault();
+        }
+      });
+
+      window.addEventListener('drop', async (e) => {
+        dropDragCounter = 0;
+        if (jsonDropOverlay) jsonDropOverlay.classList.remove('active');
+
+        if (!e.dataTransfer || !e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
+        const file = e.dataTransfer.files[0];
+        if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
+          return;
+        }
+        e.preventDefault();
+
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          let diceArray = null;
+
+          if (Array.isArray(parsed)) {
+            diceArray = parsed;
+          } else if (parsed && Array.isArray(parsed.bag)) {
+            diceArray = parsed.bag;
+          } else if (parsed && Array.isArray(parsed.dicePool)) {
+            diceArray = parsed.dicePool.map((type, idx) => ({
+              type,
+              materialKey: (parsed.poolMaterials && parsed.poolMaterials[idx]) || 'ruby',
+              styleOptions: (parsed.poolStyles && parsed.poolStyles[idx]) || {}
+            }));
+          }
+
+          if (!diceArray || diceArray.length === 0) {
+            showToast('⚠️ No dice records found in dropped JSON');
+            return;
+          }
+
+          const VALID_TYPES = ['d4', 'd6', 'd8', 'd10', 'd12', 'd14', 'd16', 'd20', 'd24', 'd30', 'd48', 'd60', 'd100', 'd120'];
+          const validDice = diceArray.filter(d => d && typeof d.type === 'string' && VALID_TYPES.includes(d.type.toLowerCase()));
+
+          if (validDice.length === 0) {
+            showToast('⚠️ Dropped JSON does not contain valid PolyDice types');
+            return;
+          }
+
+          pendingImportDice = validDice;
+          promptImportConfirmation(file.name, validDice);
+        } catch (err) {
+          console.error('Failed to parse dropped JSON:', err);
+          showToast(`❌ Invalid JSON file: ${err.message}`);
+        }
+      });
+
+      function promptImportConfirmation(fileName, diceList) {
+        if (!importModal) return;
+        const msgEl = document.getElementById('import-confirm-msg');
+        const listEl = document.getElementById('import-preview-list');
+
+        if (msgEl) {
+          msgEl.innerHTML = `Found <b>${diceList.length} dice</b> in <code>${fileName}</code>.<br>Append them to your current Dice Bag collection?`;
+        }
+
+        if (listEl) {
+          listEl.innerHTML = '';
+          diceList.forEach(d => {
+            const chip = document.createElement('span');
+            chip.className = 'import-chip';
+            const matDef = DICE_MATERIALS[d.materialKey] || {};
+            chip.innerHTML = `<span>🎲</span> <b>${d.type.toUpperCase()}</b> • <span>${matDef.name || d.materialKey || 'Default'}</span>`;
+            listEl.appendChild(chip);
+          });
+        }
+
+        importModal.classList.add('open');
+      }
+
+      function closeImportModal() {
+        if (importModal) importModal.classList.remove('open');
+        pendingImportDice = [];
+      }
+
+      document.getElementById('close-import-btn')?.addEventListener('click', closeImportModal);
+      document.getElementById('import-cancel-btn')?.addEventListener('click', closeImportModal);
+
+      document.getElementById('import-confirm-btn')?.addEventListener('click', async () => {
+        if (!pendingImportDice || pendingImportDice.length === 0) {
+          closeImportModal();
+          return;
+        }
+
+        const count = pendingImportDice.length;
+        for (const raw of pendingImportDice) {
+          const type = raw.type.toLowerCase();
+          const matKey = raw.materialKey || currentMaterial;
+          const style = Object.assign({}, raw.styleOptions || {});
+          const item = {
+            id: 'die_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+            type,
+            materialKey: matKey,
+            styleOptions: style,
+            name: raw.name || `${type.toUpperCase()} • ${(DICE_MATERIALS[matKey] || {}).name || matKey}`,
+            createdAt: Date.now()
+          };
+
+          try {
+            item.thumbnail = renderDieThumbnail(type, matKey, style);
+          } catch (_) {}
+
+          await StorageManager.addDieToBag(item);
+        }
+
+        closeImportModal();
+        await updateDiceBagBadge();
+        renderDiceBagGrid();
+        openDiceBagModal();
+        if (diceEngine.soundSystem && typeof diceEngine.soundSystem.playSpawnCue === 'function') {
+          diceEngine.soundSystem.playSpawnCue();
+        }
+        showToast(`✨ Appended ${count} dice to your Dice Bag!`);
+      });
 
       // Font Family Selector Listener
       const fontSelect = document.getElementById('font-family-select');
