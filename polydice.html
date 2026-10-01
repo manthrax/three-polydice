@@ -2272,6 +2272,12 @@
           createdAt: Date.now()
         };
 
+        try {
+          item.thumbnail = renderDieThumbnail(type, matKey, item.styleOptions);
+        } catch (e) {
+          console.warn('Could not generate 3D thumbnail:', e);
+        }
+
         await StorageManager.addDieToBag(item);
         await updateDiceBagBadge();
         showToast(`🎒 Saved ${item.name} into Dice Bag!`);
@@ -2286,6 +2292,139 @@
           renderDiceBagGrid();
         }
       }
+
+      // =========================================================================
+      // PROCEDURAL 3D WEBGL DIE THUMBNAIL RENDERER (LIBRARY-POWERED)
+      // =========================================================================
+
+      const THUMB_SIZE = 128;
+      let thumbRenderTarget = null;
+      let thumbScene = null;
+      let thumbCamera = null;
+      let thumbCanvas = null;
+      let thumbCtx = null;
+      let pixelBuffer = null;
+      const thumbnailCache = new Map();
+
+      function initThumbnailRenderer() {
+        if (thumbRenderTarget) return;
+        thumbRenderTarget = new THREE.WebGLRenderTarget(THUMB_SIZE, THUMB_SIZE, {
+          format: THREE.RGBAFormat,
+          type: THREE.UnsignedByteType,
+          minFilter: THREE.LinearFilter,
+          magFilter: THREE.LinearFilter
+        });
+        if (THREE.SRGBColorSpace && thumbRenderTarget.texture) {
+          thumbRenderTarget.texture.colorSpace = THREE.SRGBColorSpace;
+        }
+
+        thumbScene = new THREE.Scene();
+        if (typeof moodyEnvMap !== 'undefined' && moodyEnvMap) {
+          thumbScene.environment = moodyEnvMap;
+        }
+
+        const amb = new THREE.AmbientLight(0xffffff, 0.75);
+        thumbScene.add(amb);
+
+        const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
+        keyLight.position.set(3, 4.5, 3.5);
+        thumbScene.add(keyLight);
+
+        const fillLight = new THREE.DirectionalLight(0x88bbff, 0.9);
+        fillLight.position.set(-3, -1, 2.5);
+        thumbScene.add(fillLight);
+
+        const rimLight = new THREE.DirectionalLight(0xffeedd, 1.4);
+        rimLight.position.set(0, 4, -4);
+        thumbScene.add(rimLight);
+
+        thumbCamera = new THREE.PerspectiveCamera(36, 1, 0.1, 20);
+        thumbCamera.position.set(0, 0.45, 2.85);
+        thumbCamera.lookAt(0, 0, 0);
+
+        thumbCanvas = document.createElement('canvas');
+        thumbCanvas.width = THUMB_SIZE;
+        thumbCanvas.height = THUMB_SIZE;
+        thumbCtx = thumbCanvas.getContext('2d');
+        pixelBuffer = new Uint8Array(THUMB_SIZE * THUMB_SIZE * 4);
+      }
+
+      function renderDieThumbnail(type, materialKey, styleOptions = {}) {
+        if (!renderer || !diceEngine) return null;
+        const cacheKey = `${type}_${materialKey}_${JSON.stringify(styleOptions || {})}`;
+        if (thumbnailCache.has(cacheKey)) {
+          return thumbnailCache.get(cacheKey);
+        }
+
+        try {
+          initThumbnailRenderer();
+
+          const activeStyle = styleOptions || {};
+          const bevel = (activeStyle.bevel !== undefined) ? activeStyle.bevel : currentBevel;
+          const bevelSegments = (activeStyle.bevelSegments !== undefined) ? activeStyle.bevelSegments : currentBevelSegments;
+
+          const meshOpts = Object.assign({
+            bevel,
+            bevelSegments,
+            material: materialKey
+          }, activeStyle);
+
+          const dieMesh = diceEngine.createDieMesh(type, meshOpts);
+          if (!dieMesh) return null;
+
+          // Fit die gracefully within unit sphere
+          dieMesh.geometry.computeBoundingSphere();
+          const radius = (dieMesh.geometry.boundingSphere && dieMesh.geometry.boundingSphere.radius > 0)
+            ? dieMesh.geometry.boundingSphere.radius
+            : 1.0;
+          const scale = 1.0 / radius;
+          dieMesh.scale.set(scale, scale, scale);
+          dieMesh.position.set(0, 0, 0);
+
+          // Attractive 3D isometric angle showcasing multiple faces and numbers
+          dieMesh.rotation.set(0.46, 0.72, 0.14);
+
+          thumbScene.add(dieMesh);
+
+          const oldTarget = renderer.getRenderTarget();
+          const oldClearColor = new THREE.Color();
+          renderer.getClearColor(oldClearColor);
+          const oldClearAlpha = renderer.getClearAlpha();
+
+          renderer.setRenderTarget(thumbRenderTarget);
+          renderer.setClearColor(0x000000, 0.0);
+          renderer.clear(true, true, true);
+          renderer.render(thumbScene, thumbCamera);
+
+          renderer.readRenderTargetPixels(thumbRenderTarget, 0, 0, THUMB_SIZE, THUMB_SIZE, pixelBuffer);
+
+          renderer.setRenderTarget(oldTarget);
+          renderer.setClearColor(oldClearColor, oldClearAlpha);
+
+          thumbScene.remove(dieMesh);
+
+          // Flip rows vertically from WebGL bottom-to-top to 2D canvas top-to-bottom
+          const imgData = thumbCtx.createImageData(THUMB_SIZE, THUMB_SIZE);
+          const dst = imgData.data;
+          for (let y = 0; y < THUMB_SIZE; y++) {
+            const srcY = (THUMB_SIZE - 1 - y);
+            const srcRowOffset = srcY * THUMB_SIZE * 4;
+            const dstRowOffset = y * THUMB_SIZE * 4;
+            for (let x = 0; x < THUMB_SIZE * 4; x++) {
+              dst[dstRowOffset + x] = pixelBuffer[srcRowOffset + x];
+            }
+          }
+          thumbCtx.putImageData(imgData, 0, 0);
+
+          const dataUrl = thumbCanvas.toDataURL('image/png');
+          thumbnailCache.set(cacheKey, dataUrl);
+          return dataUrl;
+        } catch (err) {
+          console.warn('renderDieThumbnail error:', err);
+          return null;
+        }
+      }
+      window.renderDieThumbnail = renderDieThumbnail;
 
       // =========================================================================
       // PROCEDURAL POLYHEDRAL SVG ICON GENERATOR FOR DICE BAG & HUD
@@ -2618,17 +2757,32 @@
           const edgeColor = (item.styleOptions && item.styleOptions.edgeColor) || '#ffd700';
           const fontColor = (item.styleOptions && item.styleOptions.fontColor) || '#ffffff';
 
-          const iconHtml = getPolyhedralDieIcon(item.type, {
-            faceColor: faceColor,
-            edgeColor: edgeColor,
-            fontColor: fontColor,
-            size: 46
-          });
+          let thumbUrl = item.thumbnail;
+          if (!thumbUrl) {
+            try {
+              thumbUrl = renderDieThumbnail(item.type, item.materialKey, item.styleOptions);
+              if (thumbUrl) {
+                item.thumbnail = thumbUrl;
+                StorageManager.addDieToBag(item);
+              }
+            } catch (e) {
+              console.warn('Thumbnail generation failed for', item.type, e);
+            }
+          }
+
+          const previewInner = thumbUrl
+            ? `<img src="${thumbUrl}" class="bag-die-thumb" alt="${item.name}" />`
+            : getPolyhedralDieIcon(item.type, {
+                faceColor: faceColor,
+                edgeColor: edgeColor,
+                fontColor: fontColor,
+                size: 46
+              });
 
           card.innerHTML = `
             <button class="bag-die-delete-btn" title="Remove die from bag">&times;</button>
             <div class="bag-die-preview-wrap" style="border-color: ${edgeColor}55;">
-              ${iconHtml}
+              ${previewInner}
             </div>
             <div class="bag-die-info">
               <span class="bag-die-type">${item.type.toUpperCase()}</span>
@@ -2714,14 +2868,23 @@
             const dragFaceColor = (pointerDownDie.styleOptions && pointerDownDie.styleOptions.faceFillColor) || matDef.baseColor || '#d4af37';
             const dragEdgeColor = (pointerDownDie.styleOptions && pointerDownDie.styleOptions.edgeColor) || '#ffd700';
             const dragFontColor = (pointerDownDie.styleOptions && pointerDownDie.styleOptions.fontColor) || '#ffffff';
-            const iconHtml = getPolyhedralDieIcon(pointerDownDie.type, {
-              faceColor: dragFaceColor,
-              edgeColor: dragEdgeColor,
-              fontColor: dragFontColor,
-              size: 26
-            });
+
+            let dragThumb = null;
+            try {
+              dragThumb = renderDieThumbnail(pointerDownDie.type, pointerDownDie.materialKey, pointerDownDie.styleOptions);
+            } catch (e) {}
+
+            const iconHtml = dragThumb
+              ? `<img src="${dragThumb}" style="width: 28px; height: 28px; object-fit: contain; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.8));" />`
+              : getPolyhedralDieIcon(pointerDownDie.type, {
+                  faceColor: dragFaceColor,
+                  edgeColor: dragEdgeColor,
+                  fontColor: dragFontColor,
+                  size: 26
+                });
+
             dragGhost.innerHTML = `
-              <div style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex: none;">
+              <div style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex: none;">
                 ${iconHtml}
               </div>
               <div style="display: flex; flex-direction: column; line-height: 1.15;">
