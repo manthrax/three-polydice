@@ -2404,24 +2404,30 @@ export class PolyDice {
     this.activeDiceInstances.forEach(d => {
       d.materialKey = materialKey;
       if (d.styleOptions) {
+        delete d.styleOptions.faceFillColor;
+        delete d.styleOptions.faceColor;
+        delete d.styleOptions.edgeColor;
+        delete d.styleOptions.bevelColor;
+        delete d.styleOptions.fontColor;
+        delete d.styleOptions.numFillColor;
+        delete d.styleOptions.fontShadowColor;
+        delete d.styleOptions.numOcclusionColor;
+        delete d.styleOptions.roughness;
+        delete d.styleOptions.metalness;
+        delete d.styleOptions.iridescence;
+        delete d.styleOptions.sheen;
         d.styleOptions.material = materialKey;
-        d.styleOptions.faceFillColor = null;
-        d.styleOptions.edgeColor = null;
-        d.styleOptions.bevelColor = null;
-        d.styleOptions.fontColor = null;
-        d.styleOptions.fontShadowColor = null;
-        d.styleOptions.roughness = null;
-        d.styleOptions.metalness = null;
-        d.styleOptions.iridescence = null;
-        d.styleOptions.sheen = null;
       }
       const opts = Object.assign({
-        bevel: this.bevel,
-        bevelSegments: this.bevelSegments,
+        bevel: (d.styleOptions && d.styleOptions.bevel != null) ? d.styleOptions.bevel : this.bevel,
+        bevelSegments: (d.styleOptions && d.styleOptions.bevelSegments != null) ? d.styleOptions.bevelSegments : this.bevelSegments,
+      }, d.styleOptions || {}, {
         material: materialKey
-      }, d.styleOptions || {});
+      });
       const asset = this.getDiceAsset(d.type, opts);
+      d.mesh.geometry = asset.geometry;
       d.mesh.material = asset.material;
+      if (d.outlineMesh) d.outlineMesh.geometry = asset.geometry;
       d.asset = asset;
     });
 
@@ -2446,19 +2452,53 @@ export class PolyDice {
     if (idx !== -1) {
       if (!this.poolMaterials) this.poolMaterials = [];
       this.poolMaterials[idx] = materialKey;
+      if (this.poolStyles && this.poolStyles[idx]) {
+        delete this.poolStyles[idx].faceFillColor;
+        delete this.poolStyles[idx].faceColor;
+        delete this.poolStyles[idx].edgeColor;
+        delete this.poolStyles[idx].bevelColor;
+        delete this.poolStyles[idx].fontColor;
+        delete this.poolStyles[idx].numFillColor;
+        delete this.poolStyles[idx].fontShadowColor;
+        delete this.poolStyles[idx].numOcclusionColor;
+        delete this.poolStyles[idx].roughness;
+        delete this.poolStyles[idx].metalness;
+        delete this.poolStyles[idx].iridescence;
+        delete this.poolStyles[idx].sheen;
+        this.poolStyles[idx].material = materialKey;
+      }
     }
 
     if (!d || !d.mesh) return null;
 
     d.materialKey = materialKey;
+    if (d.styleOptions) {
+      delete d.styleOptions.faceFillColor;
+      delete d.styleOptions.faceColor;
+      delete d.styleOptions.edgeColor;
+      delete d.styleOptions.bevelColor;
+      delete d.styleOptions.fontColor;
+      delete d.styleOptions.numFillColor;
+      delete d.styleOptions.fontShadowColor;
+      delete d.styleOptions.numOcclusionColor;
+      delete d.styleOptions.roughness;
+      delete d.styleOptions.metalness;
+      delete d.styleOptions.iridescence;
+      delete d.styleOptions.sheen;
+      d.styleOptions.material = materialKey;
+    }
+
     const opts = Object.assign({
-      bevel: this.bevel,
-      bevelSegments: this.bevelSegments,
+      bevel: (d.styleOptions && d.styleOptions.bevel != null) ? d.styleOptions.bevel : this.bevel,
+      bevelSegments: (d.styleOptions && d.styleOptions.bevelSegments != null) ? d.styleOptions.bevelSegments : this.bevelSegments,
+    }, d.styleOptions || {}, {
       material: materialKey
-    }, d.styleOptions || {});
+    });
     const asset = this.getDiceAsset(d.type, opts);
 
+    d.mesh.geometry = asset.geometry;
     d.mesh.material = asset.material;
+    if (d.outlineMesh) d.outlineMesh.geometry = asset.geometry;
     d.asset = asset;
     this.emit('dieMaterialChange', { die: d, materialKey, index: idx });
     return d;

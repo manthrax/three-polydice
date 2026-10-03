@@ -2056,12 +2056,18 @@
       if (selectedDie) {
         if (selectedDie.styleOptions) {
           delete selectedDie.styleOptions.faceFillColor;
+          delete selectedDie.styleOptions.faceColor;
           delete selectedDie.styleOptions.edgeColor;
           delete selectedDie.styleOptions.bevelColor;
+          delete selectedDie.styleOptions.fontColor;
+          delete selectedDie.styleOptions.numFillColor;
+          delete selectedDie.styleOptions.fontShadowColor;
+          delete selectedDie.styleOptions.numOcclusionColor;
           delete selectedDie.styleOptions.roughness;
           delete selectedDie.styleOptions.metalness;
           delete selectedDie.styleOptions.iridescence;
           delete selectedDie.styleOptions.sheen;
+          selectedDie.styleOptions.material = matKey;
         }
         diceEngine.setDieMaterial(selectedDie, matKey);
       } else {
@@ -2069,12 +2075,18 @@
         diceEngine.activeDiceInstances.forEach(d => {
           if (d.styleOptions) {
             delete d.styleOptions.faceFillColor;
+            delete d.styleOptions.faceColor;
             delete d.styleOptions.edgeColor;
             delete d.styleOptions.bevelColor;
+            delete d.styleOptions.fontColor;
+            delete d.styleOptions.numFillColor;
+            delete d.styleOptions.fontShadowColor;
+            delete d.styleOptions.numOcclusionColor;
             delete d.styleOptions.roughness;
             delete d.styleOptions.metalness;
             delete d.styleOptions.iridescence;
             delete d.styleOptions.sheen;
+            d.styleOptions.material = matKey;
           }
         });
         diceEngine.setDiceMaterial(matKey);
