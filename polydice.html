@@ -109,130 +109,91 @@
       </div>
     </div>
 
-    <div id="pool-section" class="collapsible-section collapsed">
-      <div class="section-title collapsible-header">
+    <!-- Unified Dice Pool Section (Presets, Active Chips & Add Die) -->
+    <div id="pool-section" class="collapsible-section collapsed" style="margin-top: 3px;">
+      <div class="section-title collapsible-header" style="margin-bottom: 3px;">
         <div class="collapsible-title-wrap">
           <span class="collapse-arrow">▸</span>
-          <span>Active Pool</span>
+          <span>Dice Pool</span>
         </div>
         <div style="display: flex; gap: 4px;" onclick="event.stopPropagation()">
           <button id="randomize-mats-btn" class="small-btn"
             style="flex: none; padding: 1px 6px; background: rgba(97, 175, 239, 0.15); border-color: rgba(97, 175, 239, 0.35); color: var(--accent);"
             title="Shuffle random materials across all dice in pool">🎲 Shuffle</button>
-          <button id="clear-pool-btn" class="small-btn" style="flex: none; padding: 1px 6px;">Clear</button>
+          <button id="clear-pool-btn" class="small-btn" style="flex: none; padding: 1px 6px;" title="Clear all dice from tray">Clear</button>
         </div>
       </div>
-      <div class="collapsible-body">
-        <div class="pool-container" id="dice-pool-chips">
+      <div class="collapsible-body" style="gap: 5px;">
+        <!-- Quick Set Presets -->
+        <div class="sub-section-label">Quick Sets</div>
+        <div class="presets-row" id="presets-section" style="flex-wrap: wrap; gap: 3px;">
+          <button class="small-btn preset-chip" data-preset="dnd7" id="preset-rpg" title="Standard D&D 7-die set" style="padding: 2px 5px; font-size: 9px;">RPG 7</button>
+          <button class="small-btn preset-chip" data-preset="all14" id="preset-all14" title="Full set of all 14 polyhedral dice" style="padding: 2px 5px; font-size: 9px;">All 14</button>
+          <button class="small-btn preset-chip" data-preset="exotic" id="preset-exotic" title="Exotic polyhedra: d14, d16, d24, d30, d48, d60, d100, d120" style="padding: 2px 5px; font-size: 9px;">Exotic 8</button>
+          <button class="small-btn preset-chip" data-preset="2d20" id="preset-adv" title="2d20 Advantage roll" style="padding: 2px 5px; font-size: 9px;">2d20</button>
+          <button class="small-btn preset-chip" data-preset="4d6" id="preset-2d6" title="4d6 Ability Score roll" style="padding: 2px 5px; font-size: 9px;">4d6</button>
+        </div>
+
+        <!-- Active Tray Dice Chips -->
+        <div class="sub-section-label">
+          <span>Active Tray Dice</span>
+          <span id="pool-count-label" style="color: var(--accent); font-weight: 700;"></span>
+        </div>
+        <div class="pool-container" id="dice-pool-chips" style="max-height: 70px; overflow-y: auto;">
           <span style="font-size: 10px; color: var(--text-muted);">Click dice to add</span>
         </div>
-      </div>
-    </div>
 
-    <div id="dice-selector-section" class="collapsible-section collapsed">
-      <div class="section-title collapsible-header">
-        <div class="collapsible-title-wrap">
-          <span class="collapse-arrow">▸</span>
-          <span id="die-selector-title">Dice Selection</span>
-        </div>
-      </div>
-      <div class="collapsible-body">
+        <!-- Add Individual Polyhedral Die Grid -->
+        <div class="sub-section-label" id="die-selector-title">Add Die to Pool</div>
         <div class="dice-grid" id="dice-selector">
           <button class="die-btn" data-type="d4">d4</button>
           <button class="die-btn" data-type="d6">d6</button>
           <button class="die-btn" data-type="d8">d8</button>
           <button class="die-btn" data-type="d10">d10</button>
           <button class="die-btn" data-type="d12">d12</button>
+          <button class="die-btn" data-type="d20">d20</button>
+          <button class="die-btn" data-type="d100">d100</button>
           <button class="die-btn" data-type="d14">d14</button>
           <button class="die-btn" data-type="d16">d16</button>
-          <button class="die-btn" data-type="d20">d20</button>
           <button class="die-btn" data-type="d24">d24</button>
           <button class="die-btn active" data-type="d30">d30</button>
           <button class="die-btn" data-type="d48">d48</button>
           <button class="die-btn" data-type="d60">d60</button>
-          <button class="die-btn" data-type="d100">d100</button>
           <button class="die-btn" data-type="d120">d120</button>
         </div>
+
+        <button class="small-btn" id="export-glb-btn"
+          style="width: 100%; margin-top: 2px; padding: 3px; font-size: 9px; background: rgba(35, 42, 54, 0.75); border-color: rgba(97, 175, 239, 0.3);"
+          title="Export active 3D dice models to binary .glb format">📦 Export .GLB</button>
       </div>
     </div>
 
-    <div id="bevel-control-section" class="collapsible-section collapsed" style="margin-top: 2px;">
-      <div class="section-title collapsible-header" style="margin-bottom: 3px;">
-        <div class="collapsible-title-wrap">
-          <span class="collapse-arrow">▸</span>
-          <span style="margin: 0;">Edges / Bevel</span>
-        </div>
-        <span id="bevel-seg-label" style="font-size: 8.5px; color: var(--accent); font-weight: 600;">4 seg</span>
-      </div>
-      <div class="collapsible-body">
-        <div class="tab-switch" id="bevel-switch"
-          style="width: 100%; display: flex; justify-content: space-between; padding: 2px; margin-bottom: 3px;">
-          <button class="tab-btn" data-bevel="0.0"
-            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;">Off</button>
-          <button class="tab-btn" data-bevel="0.10"
-            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;">Subtle</button>
-          <button class="tab-btn active" data-bevel="0.20"
-            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;">Round</button>
-        </div>
-        <!-- Continuous Bevel Radius Slider -->
-        <div style="display: flex; flex-direction: column; gap: 1px; margin-bottom: 3px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted);">Radius:</span>
-            <span id="bevel-radius-val" style="font-size: 8.5px; color: var(--accent);">0.20</span>
-          </div>
-          <input type="range" id="bevel-radius-slider" min="0.00" max="0.35" step="0.01" value="0.20"
-            style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;"
-            title="Adjust bevel chamfer / fillet radius smoothly">
-        </div>
-        <div id="bevel-segments-row"
-          style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
-          <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Segments</span>
-          <div class="tab-switch" id="bevel-segments-switch"
-            style="flex: 1; display: flex; justify-content: space-between; padding: 1px;">
-            <button class="tab-btn" data-seg="1"
-              style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">1</button>
-            <button class="tab-btn" data-seg="2"
-              style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">2</button>
-            <button class="tab-btn" data-seg="3"
-              style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">3</button>
-            <button class="tab-btn active" data-seg="4"
-              style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">4</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="physics-hull-control-section" class="collapsible-section collapsed" style="margin-top: 3px;">
-      <div class="section-title collapsible-header" style="margin-bottom: 3px;">
-        <div class="collapsible-title-wrap">
-          <span class="collapse-arrow">▸</span>
-          <span style="margin: 0;">Physics Hull</span>
-        </div>
-        <span id="physics-hull-label" style="font-size: 8.5px; color: #98c379; font-weight: 600;">⚡ Fast (Base)</span>
-      </div>
-      <div class="collapsible-body">
-        <div class="tab-switch" id="physics-hull-switch"
-          style="width: 100%; display: flex; justify-content: space-between; padding: 2px;">
-          <button class="tab-btn active" data-fast="true"
-            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;"
-            title="Fast GJK collision using unbeveled mathematical vertices (~10x-50x less CPU)">⚡ Fast</button>
-          <button class="tab-btn" data-fast="false"
-            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;"
-            title="Accurate collision using full multi-segment beveled fillet vertices">🎯 Accurate</button>
-        </div>
-      </div>
-    </div>
-
+    <!-- Unified Appearance & Styling Section -->
     <div id="material-control-section" class="collapsible-section collapsed" style="margin-top: 3px;">
       <div class="section-title collapsible-header" style="margin-bottom: 3px;">
         <div class="collapsible-title-wrap">
           <span class="collapse-arrow">▸</span>
-          <span style="margin: 0;">Material Finish</span>
+          <span>Appearance</span>
         </div>
-        <span id="material-label" style="font-size: 8.5px; color: var(--accent-gold); font-weight: 600;">Translucent
-          Ruby</span>
+        <span id="appearance-style-badge" style="display: none;"></span>
       </div>
-      <div class="collapsible-body">
+      <div class="collapsible-body" style="gap: 5px;">
+        <!-- Clean Target / Scope Banner -->
+        <div id="style-scope-bar" class="style-scope-bar">
+          <div style="display: flex; align-items: center; gap: 5px; overflow: hidden;">
+            <span style="font-size: 11px;">🎯</span>
+            <div style="display: flex; flex-direction: column; line-height: 1.15; overflow: hidden; text-align: left;">
+              <span style="font-size: 7.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Editing Scope</span>
+              <span id="style-scope-name" style="font-weight: 700; font-size: 9.5px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">All Dice</span>
+            </div>
+          </div>
+          <button id="scope-deselect-btn" class="small-btn"
+            style="display: none; font-size: 8.5px; padding: 2px 6px; margin-left: auto; background: rgba(97, 175, 239, 0.18); border-color: var(--accent); color: var(--accent); font-weight: 600;"
+            title="Return to editing all dice in tray">Edit All</button>
+        </div>
+
+        <!-- Material Themes Grid -->
+        <div class="sub-section-label">Material Themes</div>
         <div class="mat-grid" id="material-selector">
           <button class="mat-btn" data-mat="obsidian" title="Obsidian Charcoal Resin with Silver Inlay">
             <span class="mat-swatch" style="background: #1c2027; border: 1px solid #4a5260;"></span>
@@ -277,59 +238,85 @@
             <span>Paladin</span>
           </button>
         </div>
-      </div>
-    </div>
 
-    <div id="face-style-section" class="collapsible-section collapsed" style="margin-top: 5px;">
-      <div class="section-title collapsible-header" style="margin-bottom: 3px;">
-        <div class="collapsible-title-wrap">
-          <span class="collapse-arrow">▸</span>
-          <span style="margin: 0;">Style & Edges</span>
+        <!-- Edge Bevel Controls -->
+        <div class="sub-section-label">
+          <span>Edge Bevel</span>
+          <span id="bevel-seg-label" style="font-size: 8px; color: var(--accent); font-weight: 600;">4 seg</span>
         </div>
-        <span id="face-style-label" style="font-size: 8.5px; color: var(--accent); font-weight: 600;">All Dice</span>
-      </div>
-      <div class="collapsible-body">
-        <!-- Presets Row -->
-        <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 4px;">
-          <div class="presets-row" id="edge-preset-row" style="flex: 1; gap: 2px;">
-            <button class="small-btn active" data-edge="none" style="padding: 2px 3px; font-size: 8.5px;"
-              title="Standard clean beveled facet">None</button>
-            <button class="small-btn" data-edge="gold" style="padding: 2px 3px; font-size: 8.5px;"
-              title="Gold filigree edge outline & gold numbers">Gold</button>
-            <button class="small-btn" data-edge="cyber" style="padding: 2px 3px; font-size: 8.5px;"
-              title="Cyber laser cyan outline & dark facet fill">Cyber</button>
-            <button class="small-btn" data-edge="crimson" style="padding: 2px 3px; font-size: 8.5px;"
-              title="Ruby crimson edge outline">Ruby</button>
-            <button class="small-btn" data-edge="white" style="padding: 2px 3px; font-size: 8.5px;"
-              title="White edge outline & porcelain facet">Ivory</button>
+        <div class="tab-switch" id="bevel-switch"
+          style="width: 100%; display: flex; justify-content: space-between; padding: 2px;">
+          <button class="tab-btn" data-bevel="0.0"
+            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9px;">Off</button>
+          <button class="tab-btn" data-bevel="0.10"
+            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9px;">Subtle</button>
+          <button class="tab-btn active" data-bevel="0.20"
+            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9px;">Round</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 1px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 8px; color: var(--text-muted);">Radius:</span>
+            <span id="bevel-radius-val" style="font-size: 8px; color: var(--accent);">0.20</span>
+          </div>
+          <input type="range" id="bevel-radius-slider" min="0.00" max="0.35" step="0.01" value="0.20"
+            style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;"
+            title="Adjust bevel chamfer / fillet radius smoothly">
+        </div>
+        <div id="bevel-segments-row"
+          style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
+          <span style="font-size: 8px; color: var(--text-muted); font-weight: 600;">Segments:</span>
+          <div class="tab-switch" id="bevel-segments-switch"
+            style="flex: 1; display: flex; justify-content: space-between; padding: 1px;">
+            <button class="tab-btn" data-seg="1"
+              style="flex: 1; justify-content: center; padding: 1px 0; font-size: 8.5px;">1</button>
+            <button class="tab-btn" data-seg="2"
+              style="flex: 1; justify-content: center; padding: 1px 0; font-size: 8.5px;">2</button>
+            <button class="tab-btn" data-seg="3"
+              style="flex: 1; justify-content: center; padding: 1px 0; font-size: 8.5px;">3</button>
+            <button class="tab-btn active" data-seg="4"
+              style="flex: 1; justify-content: center; padding: 1px 0; font-size: 8.5px;">4</button>
           </div>
         </div>
 
-        <!-- Copy / Paste Style Row -->
-        <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 4px;">
-          <button id="copy-style-btn" class="small-btn"
-            style="flex: 1; padding: 2px 4px; font-size: 8.5px; background: rgba(97, 175, 239, 0.12); border-color: rgba(97, 175, 239, 0.35); color: var(--accent);"
-            title="Copy this die's styling & finish (Ctrl+C)">📋 Copy Style</button>
-          <button id="paste-style-btn" class="small-btn"
-            style="flex: 1; padding: 2px 4px; font-size: 8.5px; opacity: 0.5; cursor: not-allowed;" disabled
-            title="Paste copied styling to selected die or tray (Ctrl+V)">📥 Paste Style</button>
+        <!-- Edge Inlay Accent Choices (Clearly Labeled, No duplicate text) -->
+        <div class="sub-section-label">Edge Inlay Accent</div>
+        <div class="presets-row" id="edge-preset-row" style="display: flex; gap: 2px;">
+          <button class="small-btn active" data-edge="none" style="flex: 1; padding: 2px 2px; font-size: 8px;"
+            title="Match Material or Clean Edge">Auto</button>
+          <button class="small-btn" data-edge="gold" style="flex: 1; padding: 2px 2px; font-size: 8px;"
+            title="Gold filigree edge outline & numbers">Gold</button>
+          <button class="small-btn" data-edge="cyber" style="flex: 1; padding: 2px 2px; font-size: 8px;"
+            title="Cyber laser cyan outline">Cyan</button>
+          <button class="small-btn" data-edge="crimson" style="flex: 1; padding: 2px 2px; font-size: 8px;"
+            title="Ruby crimson edge outline">Ruby</button>
+          <button class="small-btn" data-edge="white" style="flex: 1; padding: 2px 2px; font-size: 8px;"
+            title="Porcelain ivory white edge outline">Ivory</button>
         </div>
 
-        <!-- Granular Lower-Level Parameters Accordion / Toggle -->
-        <div id="style-params-toggle-row"
-          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-          <span style="font-size: 8.5px; color: var(--text-muted); font-weight: 600;">Parameters</span>
-          <button id="toggle-style-params-btn" class="small-btn" style="padding: 1px 4px; font-size: 8px;"
+        <!-- Fine-Tune Details Toggle & Container -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+          <span style="font-size: 8px; color: var(--text-muted); font-weight: 600;">Custom Styling</span>
+          <button id="toggle-style-params-btn" class="small-btn" style="padding: 1px 5px; font-size: 8px;"
             title="Expand/collapse granular style parameters">⚙️ Details ▾</button>
         </div>
 
         <div id="style-params-container"
           style="display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 4px;">
+          <!-- Copy / Paste Style Row -->
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <button id="copy-style-btn" class="small-btn"
+              style="flex: 1; padding: 2px 4px; font-size: 8px; background: rgba(97, 175, 239, 0.12); border-color: rgba(97, 175, 239, 0.35); color: var(--accent);"
+              title="Copy this die's styling (Ctrl+C)">📋 Copy</button>
+            <button id="paste-style-btn" class="small-btn"
+              style="flex: 1; padding: 2px 4px; font-size: 8px; opacity: 0.5; cursor: not-allowed;" disabled
+              title="Paste copied styling (Ctrl+V)">📥 Paste</button>
+          </div>
+
           <!-- Font Selection -->
           <div style="display: flex; gap: 4px; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Font:</span>
+            <span style="font-size: 8px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Font:</span>
             <select id="font-family-select" class="small-btn"
-              style="flex: 1; text-align: left; padding: 1px 3px; font-size: 9px; background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+              style="flex: 1; text-align: left; padding: 1px 3px; font-size: 8.5px; background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
               <option value="" selected>Cinzel (Serif)</option>
               <option value="Outfit">Outfit (Sans)</option>
               <option value="JetBrains Mono">JetBrains (Mono)</option>
@@ -340,7 +327,7 @@
 
           <!-- Font Color -->
           <div style="display: flex; gap: 4px; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Font Col:</span>
+            <span style="font-size: 8px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Font Col:</span>
             <input type="color" id="param-font-color" value="#ffffff"
               style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
             <button id="param-font-color-auto" class="small-btn" style="padding: 1px 4px; font-size: 8px;"
@@ -350,8 +337,8 @@
           <!-- Font Emboss Depth (+ / -) -->
           <div style="display: flex; flex-direction: column; gap: 1px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 8.5px; color: var(--text-muted);">Font Depth:</span>
-              <span id="param-font-depth-val" style="font-size: 8.5px; color: var(--accent);">-1.0 (Inset)</span>
+              <span style="font-size: 8px; color: var(--text-muted);">Font Depth:</span>
+              <span id="param-font-depth-val" style="font-size: 8px; color: var(--accent);">-1.0 (Inset)</span>
             </div>
             <input type="range" id="param-font-emboss-depth" min="-1.0" max="1.0" step="0.1" value="-1.0"
               style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
@@ -359,7 +346,7 @@
 
           <!-- Font Shadow Color & Radius -->
           <div style="display: flex; gap: 4px; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Shadow:</span>
+            <span style="font-size: 8px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Shadow:</span>
             <input type="color" id="param-font-shadow-color" value="#000000"
               style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
             <span style="font-size: 8px; color: var(--text-muted); margin-left: auto;">Rad:</span>
@@ -371,7 +358,7 @@
 
           <!-- Face Color -->
           <div style="display: flex; gap: 4px; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Face Fill:</span>
+            <span style="font-size: 8px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Face Fill:</span>
             <input type="color" id="param-face-color" value="#101726"
               style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
             <button id="param-face-color-none" class="small-btn active" style="padding: 1px 4px; font-size: 8px;"
@@ -381,8 +368,8 @@
           <!-- Face Opacity Slider -->
           <div style="display: flex; flex-direction: column; gap: 1px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 8.5px; color: var(--text-muted);">Face Opacity:</span>
-              <span id="param-face-opacity-val" style="font-size: 8.5px; color: var(--accent);">1.00</span>
+              <span style="font-size: 8px; color: var(--text-muted);">Face Opacity:</span>
+              <span id="param-face-opacity-val" style="font-size: 8px; color: var(--accent);">1.00</span>
             </div>
             <input type="range" id="param-face-opacity" min="0.0" max="1.0" step="0.05" value="1.0"
               style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
@@ -390,7 +377,7 @@
 
           <!-- Edge Color -->
           <div style="display: flex; gap: 4px; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Edge Col:</span>
+            <span style="font-size: 8px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Edge Col:</span>
             <input type="color" id="param-edge-color" value="#ffd700"
               style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
             <button id="param-edge-color-none" class="small-btn" style="padding: 1px 4px; font-size: 8px;"
@@ -400,8 +387,8 @@
           <!-- Edge Emboss Depth (+ / -) -->
           <div style="display: flex; flex-direction: column; gap: 1px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 8.5px; color: var(--text-muted);">Edge Depth:</span>
-              <span id="param-edge-depth-val" style="font-size: 8.5px; color: var(--accent);">+1.0 (Outset)</span>
+              <span style="font-size: 8px; color: var(--text-muted);">Edge Depth:</span>
+              <span id="param-edge-depth-val" style="font-size: 8px; color: var(--accent);">+1.0 (Outset)</span>
             </div>
             <input type="range" id="param-edge-emboss-depth" min="-1.0" max="1.0" step="0.1" value="1.0"
               style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
@@ -409,7 +396,7 @@
 
           <!-- Bevel Color -->
           <div style="display: flex; gap: 4px; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Bevel Col:</span>
+            <span style="font-size: 8px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Bevel Col:</span>
             <input type="color" id="param-bevel-color" value="#d4af37"
               style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
             <button id="param-bevel-color-auto" class="small-btn active" style="padding: 1px 4px; font-size: 8px;"
@@ -419,7 +406,7 @@
           <!-- Divider: PBR & Pearlescent Material -->
           <div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 3px 0 2px 0;"></div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--accent-gold); font-weight: 700;">Material & Pearl Finish</span>
+            <span style="font-size: 8px; color: var(--accent-gold); font-weight: 700;">PBR & Pearl Finish</span>
             <button id="param-pbr-auto" class="small-btn" style="padding: 1px 4px; font-size: 8px;"
               title="Reset PBR & Pearl to material defaults">Reset</button>
           </div>
@@ -427,8 +414,8 @@
           <!-- Roughness Slider -->
           <div style="display: flex; flex-direction: column; gap: 1px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 8.5px; color: var(--text-muted);">Roughness:</span>
-              <span id="param-roughness-val" style="font-size: 8.5px; color: var(--accent);">Auto</span>
+              <span style="font-size: 8px; color: var(--text-muted);">Roughness:</span>
+              <span id="param-roughness-val" style="font-size: 8px; color: var(--accent);">Auto</span>
             </div>
             <input type="range" id="param-roughness" min="0.00" max="1.00" step="0.02" value="0.16"
               style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
@@ -437,8 +424,8 @@
           <!-- Metalness Slider -->
           <div style="display: flex; flex-direction: column; gap: 1px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 8.5px; color: var(--text-muted);">Metalness:</span>
-              <span id="param-metalness-val" style="font-size: 8.5px; color: var(--accent);">Auto</span>
+              <span style="font-size: 8px; color: var(--text-muted);">Metalness:</span>
+              <span id="param-metalness-val" style="font-size: 8px; color: var(--accent);">Auto</span>
             </div>
             <input type="range" id="param-metalness" min="0.00" max="1.00" step="0.02" value="0.04"
               style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
@@ -447,8 +434,8 @@
           <!-- Iridescence Slider -->
           <div style="display: flex; flex-direction: column; gap: 1px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 8.5px; color: var(--text-muted);">Iridescence (Pearl):</span>
-              <span id="param-iridescence-val" style="font-size: 8.5px; color: var(--accent);">Auto</span>
+              <span style="font-size: 8px; color: var(--text-muted);">Iridescence (Pearl):</span>
+              <span id="param-iridescence-val" style="font-size: 8px; color: var(--accent);">Auto</span>
             </div>
             <input type="range" id="param-iridescence" min="0.00" max="1.00" step="0.05" value="0.80"
               style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
@@ -457,8 +444,8 @@
           <!-- Iridescence IOR Slider -->
           <div style="display: flex; flex-direction: column; gap: 1px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 8.5px; color: var(--text-muted);">Iridescence IOR:</span>
-              <span id="param-iridescence-ior-val" style="font-size: 8.5px; color: var(--accent);">1.60</span>
+              <span style="font-size: 8px; color: var(--text-muted);">Iridescence IOR:</span>
+              <span id="param-iridescence-ior-val" style="font-size: 8px; color: var(--accent);">1.60</span>
             </div>
             <input type="range" id="param-iridescence-ior" min="1.00" max="2.40" step="0.05" value="1.60"
               style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
@@ -466,7 +453,7 @@
 
           <!-- Sheen Slider & Sheen Color -->
           <div style="display: flex; gap: 4px; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Sheen:</span>
+            <span style="font-size: 8px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Sheen:</span>
             <input type="range" id="param-sheen" min="0.00" max="1.00" step="0.05" value="0.60"
               style="flex: 1; height: 4px; accent-color: var(--accent); cursor: pointer;">
             <span id="param-sheen-val"
@@ -479,47 +466,34 @@
       </div>
     </div>
 
-    <div id="presets-section" class="collapsible-section collapsed" style="margin-top: 3px;">
-      <div class="section-title collapsible-header" style="margin-bottom: 3px;">
-        <div class="collapsible-title-wrap">
-          <span class="collapse-arrow">▸</span>
-          <span>Presets</span>
-        </div>
-      </div>
-      <div class="collapsible-body">
-        <div class="presets-row" style="flex-wrap: wrap; gap: 4px;">
-          <button class="small-btn preset-chip" data-preset="all14" id="preset-all14"
-            style="background: rgba(97, 175, 239, 0.2); border-color: rgba(97, 175, 239, 0.4); color: var(--accent); font-weight: 700;"
-            title="Full set of all 14 polyhedral dice with randomized themes">All 14</button>
-          <button class="small-btn preset-chip" data-preset="dnd7" id="preset-rpg" title="Standard D&D 7-die set">RPG
-            7</button>
-          <button class="small-btn preset-chip" data-preset="exotic" id="preset-exotic"
-            title="Exotic polyhedra: d14, d16, d24, d30, d48, d60, d100, d120">Exotic 8</button>
-          <button class="small-btn preset-chip" data-preset="2d20" id="preset-adv"
-            title="2d20 Advantage roll">2d20</button>
-          <button class="small-btn preset-chip" data-preset="4d6" id="preset-2d6"
-            title="4d6 Ability Score roll">4d6</button>
-        </div>
-        <button class="small-btn" id="export-glb-btn"
-          style="width:100%; margin-top:4px; padding:3px; font-size:9.5px; background: rgba(35,42,54,0.75); border-color: rgba(97,175,239,0.3);"
-          title="Export selected 3D dice models to binary .glb format">📦 Export .GLB</button>
-      </div>
-    </div>
-
+    <!-- Physics & Target Roll Section -->
     <div id="target-roll-section" class="collapsible-section collapsed" style="margin-top: 3px;">
       <div class="section-title collapsible-header" style="margin-bottom: 3px;">
         <div class="collapsible-title-wrap">
           <span class="collapse-arrow">▸</span>
-          <span>Server / Target Roll</span>
+          <span>Physics & Target</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 4px;" onclick="event.stopPropagation()">
-          <span id="target-roll-indicator"
-            style="font-size: 8.5px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">OPTIONAL</span>
-          <button id="target-roll-clear" title="Clear target roll"
-            style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 11px; padding: 0 2px; display: none; line-height: 1;">✕</button>
-        </div>
+        <span id="physics-hull-label" style="font-size: 8.5px; color: #98c379; font-weight: 600;">⚡ Fast</span>
       </div>
-      <div class="collapsible-body">
+      <div class="collapsible-body" style="gap: 5px;">
+        <!-- Physics Hull -->
+        <div class="sub-section-label">Collision Hull</div>
+        <div class="tab-switch" id="physics-hull-switch"
+          style="width: 100%; display: flex; justify-content: space-between; padding: 2px;">
+          <button class="tab-btn active" data-fast="true"
+            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9px;"
+            title="Fast GJK collision using unbeveled mathematical vertices (~10x-50x less CPU)">⚡ Fast</button>
+          <button class="tab-btn" data-fast="false"
+            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9px;"
+            title="Accurate collision using full multi-segment beveled fillet vertices">🎯 Accurate</button>
+        </div>
+
+        <!-- Target Roll Input -->
+        <div class="sub-section-label">
+          <span>Target Roll (Optional)</span>
+          <button id="target-roll-clear" title="Clear target roll"
+            style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 10px; padding: 0 2px; display: none; line-height: 1;">✕</button>
+        </div>
         <div style="position: relative; display: flex; align-items: center;">
           <input type="text" id="target-roll-input" placeholder="e.g. d20: 20 or 2d6: 6, 5" autocomplete="off"
             spellcheck="false" title="Enter target roll (e.g. d20: 20 or 2d6: 6, 5). Press Enter or Roll to cast."
@@ -979,8 +953,8 @@
           <span style="font-size: 20px;">🎒</span>
           <div>
             <div class="modal-title" style="margin: 0; font-size: 15px;">Dice Bag Collection</div>
-            <div style="font-size: 10px; color: var(--text-muted);">Saved custom polyhedra &bull; Persists locally in
-              IndexedDB</div>
+            <div style="font-size: 10px; color: var(--text-muted);">Saved dice. &bull; Right click them for options
+            </div>
           </div>
         </div>
         <button class="modal-close-btn" id="close-bag-btn">✕</button>
@@ -1586,6 +1560,33 @@
       }
     }
 
+    function updateScopeBanner() {
+      const selectedDie = diceEngine.getSelectedDie();
+      const scopeBar = document.getElementById('style-scope-bar');
+      const scopeName = document.getElementById('style-scope-name');
+      const deselectBtn = document.getElementById('scope-deselect-btn');
+      const badgeEl = document.getElementById('appearance-style-badge');
+      const activeMatKey = selectedDie ? (selectedDie.materialKey || currentMaterial) : currentMaterial;
+      const matDef = DICE_MATERIALS[activeMatKey] || {};
+      const matName = matDef.name || activeMatKey;
+
+      if (badgeEl) {
+        badgeEl.textContent = matName;
+      }
+
+      if (scopeBar && scopeName) {
+        if (selectedDie) {
+          scopeBar.classList.add('has-selection');
+          scopeName.innerHTML = `<span style="color:var(--accent); font-weight:700;">Die #${selectedDie.id} (${selectedDie.type})</span> &bull; ${matName}`;
+          if (deselectBtn) deselectBtn.style.display = 'block';
+        } else {
+          scopeBar.classList.remove('has-selection');
+          scopeName.textContent = `All Dice in Tray (${matName})`;
+          if (deselectBtn) deselectBtn.style.display = 'none';
+        }
+      }
+    }
+
     function updateMaterialUI() {
       const selectedDie = diceEngine.getSelectedDie();
       const activeMatKey = selectedDie ? (selectedDie.materialKey || currentMaterial) : currentMaterial;
@@ -1610,6 +1611,8 @@
           labelEl.textContent = `${DICE_MATERIALS[activeMatKey].name} (All Dice)`;
         }
       }
+
+      updateScopeBanner();
     }
 
     function updateFaceStyleUI() {
@@ -1634,6 +1637,8 @@
           labelEl.textContent = 'All Dice';
         }
       }
+
+      updateScopeBanner();
 
       // Font Family
       const fontSelect = document.getElementById('font-family-select');
@@ -1901,6 +1906,11 @@
       const activeDice = diceEngine.getActiveDice();
       const selectedDie = diceEngine.getSelectedDie();
 
+      const countLabel = document.getElementById('pool-count-label');
+      if (countLabel) {
+        countLabel.textContent = pool.length > 0 ? `(${pool.length})` : '';
+      }
+
       if (pool.length === 0) {
         container.innerHTML = '<span style="font-size: 10px; color: var(--text-muted);">Click dice to add</span>';
         return;
@@ -2044,13 +2054,34 @@
     function setDiceMaterialUI(matKey) {
       const selectedDie = diceEngine.getSelectedDie();
       if (selectedDie) {
+        if (selectedDie.styleOptions) {
+          delete selectedDie.styleOptions.faceFillColor;
+          delete selectedDie.styleOptions.edgeColor;
+          delete selectedDie.styleOptions.bevelColor;
+          delete selectedDie.styleOptions.roughness;
+          delete selectedDie.styleOptions.metalness;
+          delete selectedDie.styleOptions.iridescence;
+          delete selectedDie.styleOptions.sheen;
+        }
         diceEngine.setDieMaterial(selectedDie, matKey);
       } else {
         currentMaterial = matKey;
+        diceEngine.activeDiceInstances.forEach(d => {
+          if (d.styleOptions) {
+            delete d.styleOptions.faceFillColor;
+            delete d.styleOptions.edgeColor;
+            delete d.styleOptions.bevelColor;
+            delete d.styleOptions.roughness;
+            delete d.styleOptions.metalness;
+            delete d.styleOptions.iridescence;
+            delete d.styleOptions.sheen;
+          }
+        });
         diceEngine.setDiceMaterial(matKey);
       }
 
       updateMaterialUI();
+      updateFaceStyleUI();
       updatePoolChipsUI();
 
       if (currentMode === 'inspector') {
@@ -4303,6 +4334,15 @@
         setDiceMaterialUI(btn.dataset.mat);
       });
     });
+
+    const scopeDeselectBtn = document.getElementById('scope-deselect-btn');
+    if (scopeDeselectBtn) {
+      scopeDeselectBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        diceEngine.deselectDie();
+      });
+    }
 
     // Style Parameters Details Toggle
     const toggleStyleParamsBtn = document.getElementById('toggle-style-params-btn');

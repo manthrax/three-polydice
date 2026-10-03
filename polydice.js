@@ -2368,6 +2368,10 @@ export class PolyDice {
     // Immediately update geometry across all active dice instances in the tray
     this.activeDiceInstances.forEach(d => {
       const mat = d.materialKey || this.materialKey;
+      if (d.styleOptions) {
+        d.styleOptions.bevel = this.bevel;
+        d.styleOptions.bevelSegments = this.bevelSegments;
+      }
       const opts = Object.assign({
         bevel: this.bevel,
         bevelSegments: this.bevelSegments,
@@ -2399,6 +2403,18 @@ export class PolyDice {
     // Immediately update material across all currently active dice instances
     this.activeDiceInstances.forEach(d => {
       d.materialKey = materialKey;
+      if (d.styleOptions) {
+        d.styleOptions.material = materialKey;
+        d.styleOptions.faceFillColor = null;
+        d.styleOptions.edgeColor = null;
+        d.styleOptions.bevelColor = null;
+        d.styleOptions.fontColor = null;
+        d.styleOptions.fontShadowColor = null;
+        d.styleOptions.roughness = null;
+        d.styleOptions.metalness = null;
+        d.styleOptions.iridescence = null;
+        d.styleOptions.sheen = null;
+      }
       const opts = Object.assign({
         bevel: this.bevel,
         bevelSegments: this.bevelSegments,
@@ -2481,6 +2497,9 @@ export class PolyDice {
 
     this.activeDiceInstances.forEach(d => {
       const mat = d.materialKey || this.materialKey;
+      if (d.styleOptions) {
+        Object.assign(d.styleOptions, norm);
+      }
       const opts = Object.assign({
         bevel: this.bevel,
         bevelSegments: this.bevelSegments,
