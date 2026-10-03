@@ -86,342 +86,386 @@
       <button class="panel-toggle-btn" id="panel-toggle-btn" title="Collapse / Expand panel">◀</button>
     </div>
 
-    <div id="pool-section">
-      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-        <span>Active Pool</span>
-        <div style="display: flex; gap: 4px;">
+    <div id="pool-section" class="collapsible-section collapsed">
+      <div class="section-title collapsible-header">
+        <div class="collapsible-title-wrap">
+          <span class="collapse-arrow">▸</span>
+          <span>Active Pool</span>
+        </div>
+        <div style="display: flex; gap: 4px;" onclick="event.stopPropagation()">
           <button id="randomize-mats-btn" class="small-btn"
             style="flex: none; padding: 1px 6px; background: rgba(97, 175, 239, 0.15); border-color: rgba(97, 175, 239, 0.35); color: var(--accent);"
             title="Shuffle random materials across all dice in pool">🎲 Shuffle</button>
           <button id="clear-pool-btn" class="small-btn" style="flex: none; padding: 1px 6px;">Clear</button>
         </div>
       </div>
-      <div class="pool-container" id="dice-pool-chips">
-        <span style="font-size: 10px; color: var(--text-muted);">Click dice to add</span>
+      <div class="collapsible-body">
+        <div class="pool-container" id="dice-pool-chips">
+          <span style="font-size: 10px; color: var(--text-muted);">Click dice to add</span>
+        </div>
       </div>
     </div>
 
-    <div>
-      <div class="section-title" id="die-selector-title">Dice Selection</div>
-      <div class="dice-grid" id="dice-selector">
-        <button class="die-btn" data-type="d4">d4</button>
-        <button class="die-btn" data-type="d6">d6</button>
-        <button class="die-btn" data-type="d8">d8</button>
-        <button class="die-btn" data-type="d10">d10</button>
-        <button class="die-btn" data-type="d12">d12</button>
-        <button class="die-btn" data-type="d14">d14</button>
-        <button class="die-btn" data-type="d16">d16</button>
-        <button class="die-btn" data-type="d20">d20</button>
-        <button class="die-btn" data-type="d24">d24</button>
-        <button class="die-btn active" data-type="d30">d30</button>
-        <button class="die-btn" data-type="d48">d48</button>
-        <button class="die-btn" data-type="d60">d60</button>
-        <button class="die-btn" data-type="d100">d100</button>
-        <button class="die-btn" data-type="d120">d120</button>
+    <div id="dice-selector-section" class="collapsible-section collapsed">
+      <div class="section-title collapsible-header">
+        <div class="collapsible-title-wrap">
+          <span class="collapse-arrow">▸</span>
+          <span id="die-selector-title">Dice Selection</span>
+        </div>
+      </div>
+      <div class="collapsible-body">
+        <div class="dice-grid" id="dice-selector">
+          <button class="die-btn" data-type="d4">d4</button>
+          <button class="die-btn" data-type="d6">d6</button>
+          <button class="die-btn" data-type="d8">d8</button>
+          <button class="die-btn" data-type="d10">d10</button>
+          <button class="die-btn" data-type="d12">d12</button>
+          <button class="die-btn" data-type="d14">d14</button>
+          <button class="die-btn" data-type="d16">d16</button>
+          <button class="die-btn" data-type="d20">d20</button>
+          <button class="die-btn" data-type="d24">d24</button>
+          <button class="die-btn active" data-type="d30">d30</button>
+          <button class="die-btn" data-type="d48">d48</button>
+          <button class="die-btn" data-type="d60">d60</button>
+          <button class="die-btn" data-type="d100">d100</button>
+          <button class="die-btn" data-type="d120">d120</button>
+        </div>
       </div>
     </div>
 
-    <div id="bevel-control-section" style="margin-top: 2px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-        <span class="section-title" style="margin: 0;">Edges / Bevel</span>
+    <div id="bevel-control-section" class="collapsible-section collapsed" style="margin-top: 2px;">
+      <div class="section-title collapsible-header" style="margin-bottom: 3px;">
+        <div class="collapsible-title-wrap">
+          <span class="collapse-arrow">▸</span>
+          <span style="margin: 0;">Edges / Bevel</span>
+        </div>
         <span id="bevel-seg-label" style="font-size: 8.5px; color: var(--accent); font-weight: 600;">4 seg</span>
       </div>
-      <div class="tab-switch" id="bevel-switch"
-        style="width: 100%; display: flex; justify-content: space-between; padding: 2px; margin-bottom: 3px;">
-        <button class="tab-btn" data-bevel="0.0"
-          style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;">Off</button>
-        <button class="tab-btn" data-bevel="0.10"
-          style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;">Subtle</button>
-        <button class="tab-btn active" data-bevel="0.20"
-          style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;">Round</button>
-      </div>
-      <!-- Continuous Bevel Radius Slider -->
-      <div style="display: flex; flex-direction: column; gap: 1px; margin-bottom: 3px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 8.5px; color: var(--text-muted);">Radius:</span>
-          <span id="bevel-radius-val" style="font-size: 8.5px; color: var(--accent);">0.20</span>
+      <div class="collapsible-body">
+        <div class="tab-switch" id="bevel-switch"
+          style="width: 100%; display: flex; justify-content: space-between; padding: 2px; margin-bottom: 3px;">
+          <button class="tab-btn" data-bevel="0.0"
+            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;">Off</button>
+          <button class="tab-btn" data-bevel="0.10"
+            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;">Subtle</button>
+          <button class="tab-btn active" data-bevel="0.20"
+            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;">Round</button>
         </div>
-        <input type="range" id="bevel-radius-slider" min="0.00" max="0.35" step="0.01" value="0.20"
-          style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;"
-          title="Adjust bevel chamfer / fillet radius smoothly">
-      </div>
-      <div id="bevel-segments-row"
-        style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
-        <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Segments</span>
-        <div class="tab-switch" id="bevel-segments-switch"
-          style="flex: 1; display: flex; justify-content: space-between; padding: 1px;">
-          <button class="tab-btn" data-seg="1"
-            style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">1</button>
-          <button class="tab-btn" data-seg="2"
-            style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">2</button>
-          <button class="tab-btn" data-seg="3"
-            style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">3</button>
-          <button class="tab-btn active" data-seg="4"
-            style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">4</button>
+        <!-- Continuous Bevel Radius Slider -->
+        <div style="display: flex; flex-direction: column; gap: 1px; margin-bottom: 3px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted);">Radius:</span>
+            <span id="bevel-radius-val" style="font-size: 8.5px; color: var(--accent);">0.20</span>
+          </div>
+          <input type="range" id="bevel-radius-slider" min="0.00" max="0.35" step="0.01" value="0.20"
+            style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;"
+            title="Adjust bevel chamfer / fillet radius smoothly">
+        </div>
+        <div id="bevel-segments-row"
+          style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
+          <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Segments</span>
+          <div class="tab-switch" id="bevel-segments-switch"
+            style="flex: 1; display: flex; justify-content: space-between; padding: 1px;">
+            <button class="tab-btn" data-seg="1"
+              style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">1</button>
+            <button class="tab-btn" data-seg="2"
+              style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">2</button>
+            <button class="tab-btn" data-seg="3"
+              style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">3</button>
+            <button class="tab-btn active" data-seg="4"
+              style="flex: 1; justify-content: center; padding: 1px 0; font-size: 9px;">4</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <div id="physics-hull-control-section" style="margin-top: 3px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-        <span class="section-title" style="margin: 0;">Physics Hull</span>
+    <div id="physics-hull-control-section" class="collapsible-section collapsed" style="margin-top: 3px;">
+      <div class="section-title collapsible-header" style="margin-bottom: 3px;">
+        <div class="collapsible-title-wrap">
+          <span class="collapse-arrow">▸</span>
+          <span style="margin: 0;">Physics Hull</span>
+        </div>
         <span id="physics-hull-label" style="font-size: 8.5px; color: #98c379; font-weight: 600;">⚡ Fast (Base)</span>
       </div>
-      <div class="tab-switch" id="physics-hull-switch"
-        style="width: 100%; display: flex; justify-content: space-between; padding: 2px;">
-        <button class="tab-btn active" data-fast="true"
-          style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;"
-          title="Fast GJK collision using unbeveled mathematical vertices (~10x-50x less CPU)">⚡ Fast</button>
-        <button class="tab-btn" data-fast="false"
-          style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;"
-          title="Accurate collision using full multi-segment beveled fillet vertices">🎯 Accurate</button>
+      <div class="collapsible-body">
+        <div class="tab-switch" id="physics-hull-switch"
+          style="width: 100%; display: flex; justify-content: space-between; padding: 2px;">
+          <button class="tab-btn active" data-fast="true"
+            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;"
+            title="Fast GJK collision using unbeveled mathematical vertices (~10x-50x less CPU)">⚡ Fast</button>
+          <button class="tab-btn" data-fast="false"
+            style="flex: 1; justify-content: center; padding: 2px 0; font-size: 9.5px;"
+            title="Accurate collision using full multi-segment beveled fillet vertices">🎯 Accurate</button>
+        </div>
       </div>
     </div>
 
-    <div id="material-control-section" style="margin-top: 3px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-        <span class="section-title" style="margin: 0;">Material Finish</span>
-        <span id="material-label" style="font-size: 8.5px; color: var(--accent-gold); font-weight: 600;">Translucent
-          Ruby</span>
+    <div id="material-control-section" class="collapsible-section collapsed" style="margin-top: 3px;">
+      <div class="section-title collapsible-header" style="margin-bottom: 3px;">
+        <div class="collapsible-title-wrap">
+          <span class="collapse-arrow">▸</span>
+          <span style="margin: 0;">Material Finish</span>
+        </div>
+        <span id="material-label" style="font-size: 8.5px; color: var(--accent-gold); font-weight: 600;">Translucent Ruby</span>
       </div>
-      <div class="mat-grid" id="material-selector">
-        <button class="mat-btn" data-mat="obsidian" title="Obsidian Charcoal Resin with Silver Inlay">
-          <span class="mat-swatch" style="background: #1c2027; border: 1px solid #4a5260;"></span>
-          <span>Obsidian</span>
-        </button>
-        <button class="mat-btn" data-mat="gold" title="Forged Royal Gold with Obsidian Inlay">
-          <span class="mat-swatch"
-            style="background: linear-gradient(135deg, #f5d061, #b8860b); border: 1px solid #ffe599;"></span>
-          <span>Gold</span>
-        </button>
-        <button class="mat-btn" data-mat="silver" title="Forged Sterling Silver with Obsidian Inlay">
-          <span class="mat-swatch"
-            style="background: linear-gradient(135deg, #ffffff 0%, #b8c8d8 50%, #8898a8 100%); border: 1px solid #d8e8f8;"></span>
-          <span>Silver</span>
-        </button>
-        <button class="mat-btn active" data-mat="ruby" title="Translucent Ruby Gem with Gold Inlay">
-          <span class="mat-swatch"
-            style="background: radial-gradient(circle at 35% 35%, #ff3355, #880018); border: 1px solid #ff7799;"></span>
-          <span>Ruby</span>
-        </button>
-        <button class="mat-btn" data-mat="emerald" title="Imperial Emerald Jade with Gold Leaf Inlay">
-          <span class="mat-swatch"
-            style="background: radial-gradient(circle at 35% 35%, #19a56f, #093b26); border: 1px solid #45e0a0;"></span>
-          <span>Emerald</span>
-        </button>
-        <button class="mat-btn" data-mat="sapphire" title="Celestial Sapphire with Ice White Inlay">
-          <span class="mat-swatch"
-            style="background: radial-gradient(circle at 35% 35%, #2d68c4, #0b1a3d); border: 1px solid #66a5ff;"></span>
-          <span>Sapphire</span>
-        </button>
-        <button class="mat-btn" data-mat="pearl" title="Opalescent Mother of Pearl with Iridescent Rainbow Sheen">
-          <span class="mat-swatch"
-            style="background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ffe4f0 35%, #d0f8ea 70%, #ded0f8 100%); border: 1px solid #eed8ea;"></span>
-          <span>Pearl</span>
-        </button>
-        <button class="mat-btn" data-mat="cyber" title="Cyberpunk Neon with Laser Cyan Outline">
-          <span class="mat-swatch"
-            style="background: #0a0e17; border: 1px solid #00f7ff;"></span>
-          <span>Cyber</span>
-        </button>
-        <button class="mat-btn" data-mat="paladin" title="Paladin Ivory & Gold Porcelain">
-          <span class="mat-swatch"
-            style="background: #f7f4ea; border: 1px solid #d4af37;"></span>
-          <span>Paladin</span>
-        </button>
+      <div class="collapsible-body">
+        <div class="mat-grid" id="material-selector">
+          <button class="mat-btn" data-mat="obsidian" title="Obsidian Charcoal Resin with Silver Inlay">
+            <span class="mat-swatch" style="background: #1c2027; border: 1px solid #4a5260;"></span>
+            <span>Obsidian</span>
+          </button>
+          <button class="mat-btn" data-mat="gold" title="Forged Royal Gold with Obsidian Inlay">
+            <span class="mat-swatch"
+              style="background: linear-gradient(135deg, #f5d061, #b8860b); border: 1px solid #ffe599;"></span>
+            <span>Gold</span>
+          </button>
+          <button class="mat-btn" data-mat="silver" title="Forged Sterling Silver with Obsidian Inlay">
+            <span class="mat-swatch"
+              style="background: linear-gradient(135deg, #ffffff 0%, #b8c8d8 50%, #8898a8 100%); border: 1px solid #d8e8f8;"></span>
+            <span>Silver</span>
+          </button>
+          <button class="mat-btn active" data-mat="ruby" title="Translucent Ruby Gem with Gold Inlay">
+            <span class="mat-swatch"
+              style="background: radial-gradient(circle at 35% 35%, #ff3355, #880018); border: 1px solid #ff7799;"></span>
+            <span>Ruby</span>
+          </button>
+          <button class="mat-btn" data-mat="emerald" title="Imperial Emerald Jade with Gold Leaf Inlay">
+            <span class="mat-swatch"
+              style="background: radial-gradient(circle at 35% 35%, #19a56f, #093b26); border: 1px solid #45e0a0;"></span>
+            <span>Emerald</span>
+          </button>
+          <button class="mat-btn" data-mat="sapphire" title="Celestial Sapphire with Ice White Inlay">
+            <span class="mat-swatch"
+              style="background: radial-gradient(circle at 35% 35%, #2d68c4, #0b1a3d); border: 1px solid #66a5ff;"></span>
+            <span>Sapphire</span>
+          </button>
+          <button class="mat-btn" data-mat="pearl" title="Opalescent Mother of Pearl with Iridescent Rainbow Sheen">
+            <span class="mat-swatch"
+              style="background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ffe4f0 35%, #d0f8ea 70%, #ded0f8 100%); border: 1px solid #eed8ea;"></span>
+            <span>Pearl</span>
+          </button>
+          <button class="mat-btn" data-mat="cyber" title="Cyberpunk Neon with Laser Cyan Outline">
+            <span class="mat-swatch"
+              style="background: #0a0e17; border: 1px solid #00f7ff;"></span>
+            <span>Cyber</span>
+          </button>
+          <button class="mat-btn" data-mat="paladin" title="Paladin Ivory & Gold Porcelain">
+            <span class="mat-swatch"
+              style="background: #f7f4ea; border: 1px solid #d4af37;"></span>
+            <span>Paladin</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <div id="face-style-section" style="margin-top: 5px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-        <span class="section-title" style="margin: 0;">Style & Edges</span>
+    <div id="face-style-section" class="collapsible-section collapsed" style="margin-top: 5px;">
+      <div class="section-title collapsible-header" style="margin-bottom: 3px;">
+        <div class="collapsible-title-wrap">
+          <span class="collapse-arrow">▸</span>
+          <span style="margin: 0;">Style & Edges</span>
+        </div>
         <span id="face-style-label" style="font-size: 8.5px; color: var(--accent); font-weight: 600;">All Dice</span>
       </div>
-      
-      <!-- Presets Row -->
-      <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 4px;">
-        <div class="presets-row" id="edge-preset-row" style="flex: 1; gap: 2px;">
-          <button class="small-btn active" data-edge="none" style="padding: 2px 3px; font-size: 8.5px;" title="Standard clean beveled facet">None</button>
-          <button class="small-btn" data-edge="gold" style="padding: 2px 3px; font-size: 8.5px;" title="Gold filigree edge outline & gold numbers">Gold</button>
-          <button class="small-btn" data-edge="cyber" style="padding: 2px 3px; font-size: 8.5px;" title="Cyber laser cyan outline & dark facet fill">Cyber</button>
-          <button class="small-btn" data-edge="crimson" style="padding: 2px 3px; font-size: 8.5px;" title="Ruby crimson edge outline">Ruby</button>
-          <button class="small-btn" data-edge="white" style="padding: 2px 3px; font-size: 8.5px;" title="White edge outline & porcelain facet">Ivory</button>
-        </div>
-      </div>
-
-      <!-- Copy / Paste Style Row -->
-      <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 4px;">
-        <button id="copy-style-btn" class="small-btn" style="flex: 1; padding: 2px 4px; font-size: 8.5px; background: rgba(97, 175, 239, 0.12); border-color: rgba(97, 175, 239, 0.35); color: var(--accent);" title="Copy this die's styling & finish (Ctrl+C)">📋 Copy Style</button>
-        <button id="paste-style-btn" class="small-btn" style="flex: 1; padding: 2px 4px; font-size: 8.5px; opacity: 0.5; cursor: not-allowed;" disabled title="Paste copied styling to selected die or tray (Ctrl+V)">📥 Paste Style</button>
-      </div>
-
-      <!-- Granular Lower-Level Parameters Accordion / Toggle -->
-      <div id="style-params-toggle-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-        <span style="font-size: 8.5px; color: var(--text-muted); font-weight: 600;">Parameters</span>
-        <button id="toggle-style-params-btn" class="small-btn" style="padding: 1px 4px; font-size: 8px;" title="Expand/collapse granular style parameters">⚙️ Details ▾</button>
-      </div>
-
-      <div id="style-params-container" style="display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 4px;">
-        <!-- Font Selection -->
-        <div style="display: flex; gap: 4px; align-items: center;">
-          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Font:</span>
-          <select id="font-family-select" class="small-btn" style="flex: 1; text-align: left; padding: 1px 3px; font-size: 9px; background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
-            <option value="" selected>Cinzel (Serif)</option>
-            <option value="Outfit">Outfit (Sans)</option>
-            <option value="JetBrains Mono">JetBrains (Mono)</option>
-            <option value="Impact">Impact (Heavy)</option>
-            <option value="Georgia">Georgia (Book)</option>
-          </select>
-        </div>
-
-        <!-- Font Color -->
-        <div style="display: flex; gap: 4px; align-items: center;">
-          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Font Col:</span>
-          <input type="color" id="param-font-color" value="#ffffff" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
-          <button id="param-font-color-auto" class="small-btn" style="padding: 1px 4px; font-size: 8px;" title="Reset font color to material default">Auto</button>
-        </div>
-
-        <!-- Font Emboss Depth (+ / -) -->
-        <div style="display: flex; flex-direction: column; gap: 1px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted);">Font Depth:</span>
-            <span id="param-font-depth-val" style="font-size: 8.5px; color: var(--accent);">-1.0 (Inset)</span>
+      <div class="collapsible-body">
+        <!-- Presets Row -->
+        <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 4px;">
+          <div class="presets-row" id="edge-preset-row" style="flex: 1; gap: 2px;">
+            <button class="small-btn active" data-edge="none" style="padding: 2px 3px; font-size: 8.5px;" title="Standard clean beveled facet">None</button>
+            <button class="small-btn" data-edge="gold" style="padding: 2px 3px; font-size: 8.5px;" title="Gold filigree edge outline & gold numbers">Gold</button>
+            <button class="small-btn" data-edge="cyber" style="padding: 2px 3px; font-size: 8.5px;" title="Cyber laser cyan outline & dark facet fill">Cyber</button>
+            <button class="small-btn" data-edge="crimson" style="padding: 2px 3px; font-size: 8.5px;" title="Ruby crimson edge outline">Ruby</button>
+            <button class="small-btn" data-edge="white" style="padding: 2px 3px; font-size: 8.5px;" title="White edge outline & porcelain facet">Ivory</button>
           </div>
-          <input type="range" id="param-font-emboss-depth" min="-1.0" max="1.0" step="0.1" value="-1.0" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
         </div>
 
-        <!-- Font Shadow Color & Radius -->
-        <div style="display: flex; gap: 4px; align-items: center;">
-          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Shadow:</span>
-          <input type="color" id="param-font-shadow-color" value="#000000" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
-          <span style="font-size: 8px; color: var(--text-muted); margin-left: auto;">Rad:</span>
-          <input type="range" id="param-font-shadow-radius" min="0.0" max="2.5" step="0.1" value="1.0" style="width: 44px; height: 4px; accent-color: var(--accent); cursor: pointer;">
-          <span id="param-font-shadow-radius-val" style="font-size: 8px; color: var(--accent); width: 16px; text-align: right;">1x</span>
+        <!-- Copy / Paste Style Row -->
+        <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 4px;">
+          <button id="copy-style-btn" class="small-btn" style="flex: 1; padding: 2px 4px; font-size: 8.5px; background: rgba(97, 175, 239, 0.12); border-color: rgba(97, 175, 239, 0.35); color: var(--accent);" title="Copy this die's styling & finish (Ctrl+C)">📋 Copy Style</button>
+          <button id="paste-style-btn" class="small-btn" style="flex: 1; padding: 2px 4px; font-size: 8.5px; opacity: 0.5; cursor: not-allowed;" disabled title="Paste copied styling to selected die or tray (Ctrl+V)">📥 Paste Style</button>
         </div>
 
-        <!-- Face Color -->
-        <div style="display: flex; gap: 4px; align-items: center;">
-          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Face Fill:</span>
-          <input type="color" id="param-face-color" value="#101726" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
-          <button id="param-face-color-none" class="small-btn active" style="padding: 1px 4px; font-size: 8px;" title="Clear face fill color">None</button>
+        <!-- Granular Lower-Level Parameters Accordion / Toggle -->
+        <div id="style-params-toggle-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+          <span style="font-size: 8.5px; color: var(--text-muted); font-weight: 600;">Parameters</span>
+          <button id="toggle-style-params-btn" class="small-btn" style="padding: 1px 4px; font-size: 8px;" title="Expand/collapse granular style parameters">⚙️ Details ▾</button>
         </div>
 
-        <!-- Face Opacity Slider -->
-        <div style="display: flex; flex-direction: column; gap: 1px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted);">Face Opacity:</span>
-            <span id="param-face-opacity-val" style="font-size: 8.5px; color: var(--accent);">1.00</span>
+        <div id="style-params-container" style="display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 4px;">
+          <!-- Font Selection -->
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Font:</span>
+            <select id="font-family-select" class="small-btn" style="flex: 1; text-align: left; padding: 1px 3px; font-size: 9px; background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+              <option value="" selected>Cinzel (Serif)</option>
+              <option value="Outfit">Outfit (Sans)</option>
+              <option value="JetBrains Mono">JetBrains (Mono)</option>
+              <option value="Impact">Impact (Heavy)</option>
+              <option value="Georgia">Georgia (Book)</option>
+            </select>
           </div>
-          <input type="range" id="param-face-opacity" min="0.0" max="1.0" step="0.05" value="1.0" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
-        </div>
 
-        <!-- Edge Color -->
-        <div style="display: flex; gap: 4px; align-items: center;">
-          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Edge Col:</span>
-          <input type="color" id="param-edge-color" value="#ffd700" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
-          <button id="param-edge-color-none" class="small-btn" style="padding: 1px 4px; font-size: 8px;" title="Clear edge outline">None</button>
-        </div>
-
-        <!-- Edge Emboss Depth (+ / -) -->
-        <div style="display: flex; flex-direction: column; gap: 1px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted);">Edge Depth:</span>
-            <span id="param-edge-depth-val" style="font-size: 8.5px; color: var(--accent);">+1.0 (Outset)</span>
+          <!-- Font Color -->
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Font Col:</span>
+            <input type="color" id="param-font-color" value="#ffffff" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
+            <button id="param-font-color-auto" class="small-btn" style="padding: 1px 4px; font-size: 8px;" title="Reset font color to material default">Auto</button>
           </div>
-          <input type="range" id="param-edge-emboss-depth" min="-1.0" max="1.0" step="0.1" value="1.0" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
-        </div>
 
-        <!-- Bevel Color -->
-        <div style="display: flex; gap: 4px; align-items: center;">
-          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Bevel Col:</span>
-          <input type="color" id="param-bevel-color" value="#d4af37" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
-          <button id="param-bevel-color-auto" class="small-btn active" style="padding: 1px 4px; font-size: 8px;" title="Use material base color for bevel/fillets">Auto</button>
-        </div>
-
-        <!-- Divider: PBR & Pearlescent Material -->
-        <div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 3px 0 2px 0;"></div>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 8.5px; color: var(--accent-gold); font-weight: 700;">Material & Pearl Finish</span>
-          <button id="param-pbr-auto" class="small-btn" style="padding: 1px 4px; font-size: 8px;" title="Reset PBR & Pearl to material defaults">Reset</button>
-        </div>
-
-        <!-- Roughness Slider -->
-        <div style="display: flex; flex-direction: column; gap: 1px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted);">Roughness:</span>
-            <span id="param-roughness-val" style="font-size: 8.5px; color: var(--accent);">Auto</span>
+          <!-- Font Emboss Depth (+ / -) -->
+          <div style="display: flex; flex-direction: column; gap: 1px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 8.5px; color: var(--text-muted);">Font Depth:</span>
+              <span id="param-font-depth-val" style="font-size: 8.5px; color: var(--accent);">-1.0 (Inset)</span>
+            </div>
+            <input type="range" id="param-font-emboss-depth" min="-1.0" max="1.0" step="0.1" value="-1.0" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
           </div>
-          <input type="range" id="param-roughness" min="0.00" max="1.00" step="0.02" value="0.16" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
-        </div>
 
-        <!-- Metalness Slider -->
-        <div style="display: flex; flex-direction: column; gap: 1px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted);">Metalness:</span>
-            <span id="param-metalness-val" style="font-size: 8.5px; color: var(--accent);">Auto</span>
+          <!-- Font Shadow Color & Radius -->
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Shadow:</span>
+            <input type="color" id="param-font-shadow-color" value="#000000" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
+            <span style="font-size: 8px; color: var(--text-muted); margin-left: auto;">Rad:</span>
+            <input type="range" id="param-font-shadow-radius" min="0.0" max="2.5" step="0.1" value="1.0" style="width: 44px; height: 4px; accent-color: var(--accent); cursor: pointer;">
+            <span id="param-font-shadow-radius-val" style="font-size: 8px; color: var(--accent); width: 16px; text-align: right;">1x</span>
           </div>
-          <input type="range" id="param-metalness" min="0.00" max="1.00" step="0.02" value="0.04" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
-        </div>
 
-        <!-- Iridescence Slider -->
-        <div style="display: flex; flex-direction: column; gap: 1px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted);">Iridescence (Pearl):</span>
-            <span id="param-iridescence-val" style="font-size: 8.5px; color: var(--accent);">Auto</span>
+          <!-- Face Color -->
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Face Fill:</span>
+            <input type="color" id="param-face-color" value="#101726" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
+            <button id="param-face-color-none" class="small-btn active" style="padding: 1px 4px; font-size: 8px;" title="Clear face fill color">None</button>
           </div>
-          <input type="range" id="param-iridescence" min="0.00" max="1.00" step="0.05" value="0.80" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
-        </div>
 
-        <!-- Iridescence IOR Slider -->
-        <div style="display: flex; flex-direction: column; gap: 1px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 8.5px; color: var(--text-muted);">Iridescence IOR:</span>
-            <span id="param-iridescence-ior-val" style="font-size: 8.5px; color: var(--accent);">1.60</span>
+          <!-- Face Opacity Slider -->
+          <div style="display: flex; flex-direction: column; gap: 1px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 8.5px; color: var(--text-muted);">Face Opacity:</span>
+              <span id="param-face-opacity-val" style="font-size: 8.5px; color: var(--accent);">1.00</span>
+            </div>
+            <input type="range" id="param-face-opacity" min="0.0" max="1.0" step="0.05" value="1.0" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
           </div>
-          <input type="range" id="param-iridescence-ior" min="1.00" max="2.40" step="0.05" value="1.60" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
-        </div>
 
-        <!-- Sheen Slider & Sheen Color -->
-        <div style="display: flex; gap: 4px; align-items: center;">
-          <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Sheen:</span>
-          <input type="range" id="param-sheen" min="0.00" max="1.00" step="0.05" value="0.60" style="flex: 1; height: 4px; accent-color: var(--accent); cursor: pointer;">
-          <span id="param-sheen-val" style="font-size: 8px; color: var(--accent); width: 22px; text-align: right;">0.60</span>
-          <input type="color" id="param-sheen-color" value="#ffb3d9" style="width: 18px; height: 16px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;" title="Sheen Color Tint">
+          <!-- Edge Color -->
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Edge Col:</span>
+            <input type="color" id="param-edge-color" value="#ffd700" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
+            <button id="param-edge-color-none" class="small-btn" style="padding: 1px 4px; font-size: 8px;" title="Clear edge outline">None</button>
+          </div>
+
+          <!-- Edge Emboss Depth (+ / -) -->
+          <div style="display: flex; flex-direction: column; gap: 1px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 8.5px; color: var(--text-muted);">Edge Depth:</span>
+              <span id="param-edge-depth-val" style="font-size: 8.5px; color: var(--accent);">+1.0 (Outset)</span>
+            </div>
+            <input type="range" id="param-edge-emboss-depth" min="-1.0" max="1.0" step="0.1" value="1.0" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
+          </div>
+
+          <!-- Bevel Color -->
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Bevel Col:</span>
+            <input type="color" id="param-bevel-color" value="#d4af37" style="width: 20px; height: 18px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;">
+            <button id="param-bevel-color-auto" class="small-btn active" style="padding: 1px 4px; font-size: 8px;" title="Use material base color for bevel/fillets">Auto</button>
+          </div>
+
+          <!-- Divider: PBR & Pearlescent Material -->
+          <div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 3px 0 2px 0;"></div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--accent-gold); font-weight: 700;">Material & Pearl Finish</span>
+            <button id="param-pbr-auto" class="small-btn" style="padding: 1px 4px; font-size: 8px;" title="Reset PBR & Pearl to material defaults">Reset</button>
+          </div>
+
+          <!-- Roughness Slider -->
+          <div style="display: flex; flex-direction: column; gap: 1px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 8.5px; color: var(--text-muted);">Roughness:</span>
+              <span id="param-roughness-val" style="font-size: 8.5px; color: var(--accent);">Auto</span>
+            </div>
+            <input type="range" id="param-roughness" min="0.00" max="1.00" step="0.02" value="0.16" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
+          </div>
+
+          <!-- Metalness Slider -->
+          <div style="display: flex; flex-direction: column; gap: 1px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 8.5px; color: var(--text-muted);">Metalness:</span>
+              <span id="param-metalness-val" style="font-size: 8.5px; color: var(--accent);">Auto</span>
+            </div>
+            <input type="range" id="param-metalness" min="0.00" max="1.00" step="0.02" value="0.04" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
+          </div>
+
+          <!-- Iridescence Slider -->
+          <div style="display: flex; flex-direction: column; gap: 1px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 8.5px; color: var(--text-muted);">Iridescence (Pearl):</span>
+              <span id="param-iridescence-val" style="font-size: 8.5px; color: var(--accent);">Auto</span>
+            </div>
+            <input type="range" id="param-iridescence" min="0.00" max="1.00" step="0.05" value="0.80" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
+          </div>
+
+          <!-- Iridescence IOR Slider -->
+          <div style="display: flex; flex-direction: column; gap: 1px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 8.5px; color: var(--text-muted);">Iridescence IOR:</span>
+              <span id="param-iridescence-ior-val" style="font-size: 8.5px; color: var(--accent);">1.60</span>
+            </div>
+            <input type="range" id="param-iridescence-ior" min="1.00" max="2.40" step="0.05" value="1.60" style="width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;">
+          </div>
+
+          <!-- Sheen Slider & Sheen Color -->
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span style="font-size: 8.5px; color: var(--text-muted); width: 44px; flex-shrink: 0;">Sheen:</span>
+            <input type="range" id="param-sheen" min="0.00" max="1.00" step="0.05" value="0.60" style="flex: 1; height: 4px; accent-color: var(--accent); cursor: pointer;">
+            <span id="param-sheen-val" style="font-size: 8px; color: var(--accent); width: 22px; text-align: right;">0.60</span>
+            <input type="color" id="param-sheen-color" value="#ffb3d9" style="width: 18px; height: 16px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 2px;" title="Sheen Color Tint">
+          </div>
         </div>
       </div>
     </div>
 
-    <div id="presets-section">
-      <div class="section-title">Presets</div>
-      <div class="presets-row" style="flex-wrap: wrap; gap: 4px;">
-        <button class="small-btn preset-chip" data-preset="all14" id="preset-all14"
-          style="background: rgba(97, 175, 239, 0.2); border-color: rgba(97, 175, 239, 0.4); color: var(--accent); font-weight: 700;"
-          title="Full set of all 14 polyhedral dice with randomized themes">All 14</button>
-        <button class="small-btn preset-chip" data-preset="dnd7" id="preset-rpg" title="Standard D&D 7-die set">RPG
-          7</button>
-        <button class="small-btn preset-chip" data-preset="exotic" id="preset-exotic"
-          title="Exotic polyhedra: d14, d16, d24, d30, d48, d60, d100, d120">Exotic 8</button>
-        <button class="small-btn preset-chip" data-preset="2d20" id="preset-adv"
-          title="2d20 Advantage roll">2d20</button>
-        <button class="small-btn preset-chip" data-preset="4d6" id="preset-2d6"
-          title="4d6 Ability Score roll">4d6</button>
+    <div id="presets-section" class="collapsible-section collapsed" style="margin-top: 3px;">
+      <div class="section-title collapsible-header" style="margin-bottom: 3px;">
+        <div class="collapsible-title-wrap">
+          <span class="collapse-arrow">▸</span>
+          <span>Presets</span>
+        </div>
       </div>
-      <button class="small-btn" id="export-glb-btn"
-        style="width:100%; margin-top:4px; padding:3px; font-size:9.5px; background: rgba(35,42,54,0.75); border-color: rgba(97,175,239,0.3);"
-        title="Export selected 3D dice models to binary .glb format">📦 Export .GLB</button>
+      <div class="collapsible-body">
+        <div class="presets-row" style="flex-wrap: wrap; gap: 4px;">
+          <button class="small-btn preset-chip" data-preset="all14" id="preset-all14"
+            style="background: rgba(97, 175, 239, 0.2); border-color: rgba(97, 175, 239, 0.4); color: var(--accent); font-weight: 700;"
+            title="Full set of all 14 polyhedral dice with randomized themes">All 14</button>
+          <button class="small-btn preset-chip" data-preset="dnd7" id="preset-rpg" title="Standard D&D 7-die set">RPG
+            7</button>
+          <button class="small-btn preset-chip" data-preset="exotic" id="preset-exotic"
+            title="Exotic polyhedra: d14, d16, d24, d30, d48, d60, d100, d120">Exotic 8</button>
+          <button class="small-btn preset-chip" data-preset="2d20" id="preset-adv"
+            title="2d20 Advantage roll">2d20</button>
+          <button class="small-btn preset-chip" data-preset="4d6" id="preset-2d6"
+            title="4d6 Ability Score roll">4d6</button>
+        </div>
+        <button class="small-btn" id="export-glb-btn"
+          style="width:100%; margin-top:4px; padding:3px; font-size:9.5px; background: rgba(35,42,54,0.75); border-color: rgba(97,175,239,0.3);"
+          title="Export selected 3D dice models to binary .glb format">📦 Export .GLB</button>
+      </div>
     </div>
 
-    <div id="target-roll-section" style="margin-top: 8px;">
-      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-        <span>Server / Target Roll</span>
-        <span id="target-roll-indicator" style="font-size: 8.5px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">OPTIONAL</span>
+    <div id="target-roll-section" class="collapsible-section collapsed" style="margin-top: 3px;">
+      <div class="section-title collapsible-header" style="margin-bottom: 3px;">
+        <div class="collapsible-title-wrap">
+          <span class="collapse-arrow">▸</span>
+          <span>Server / Target Roll</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px;" onclick="event.stopPropagation()">
+          <span id="target-roll-indicator" style="font-size: 8.5px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">OPTIONAL</span>
+          <button id="target-roll-clear" title="Clear target roll"
+            style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 11px; padding: 0 2px; display: none; line-height: 1;">✕</button>
+        </div>
       </div>
-      <div style="position: relative; display: flex; align-items: center;">
-        <input type="text" id="target-roll-input" placeholder="e.g. d20: 20 or 2d6: 6, 5" autocomplete="off" spellcheck="false"
-          title="Enter target roll (e.g. d20: 20 or 2d6: 6, 5). Press Enter or Roll to cast."
-          style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.12); border-radius: 2px; color: #fff; font-size: 10.5px; padding: 5px 24px 5px 8px; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s;" />
-        <button id="target-roll-clear" title="Clear target roll"
-          style="position: absolute; right: 5px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 11px; padding: 2px 4px; display: none; line-height: 1;">✕</button>
+      <div class="collapsible-body">
+        <div style="position: relative; display: flex; align-items: center;">
+          <input type="text" id="target-roll-input" placeholder="e.g. d20: 20 or 2d6: 6, 5" autocomplete="off" spellcheck="false"
+            title="Enter target roll (e.g. d20: 20 or 2d6: 6, 5). Press Enter or Roll to cast."
+            style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.12); border-radius: 2px; color: #fff; font-size: 10.5px; padding: 5px 24px 5px 8px; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s;" />
+        </div>
       </div>
     </div>
   </div>
@@ -457,8 +501,6 @@
         <button class="small-btn" id="modal-download-btn"
           style="padding: 6px 14px; font-size: 11px; background: var(--accent); color: #0b0d11; font-weight: 700;">💾
           Download PNG</button>
-        <button class="small-btn" id="modal-tray-btn" style="padding: 6px 14px; font-size: 11px;">↩ Return to
-          Tray</button>
       </div>
     </div>
   </div>
@@ -1427,8 +1469,8 @@
         if (newMode === 'tray') {
           document.getElementById('tab-tray').classList.add('active');
           document.getElementById('tab-inspector').classList.remove('active');
-          document.getElementById('pool-section').style.display = 'block';
-          document.getElementById('presets-section').style.display = 'block';
+          document.getElementById('pool-section').style.display = '';
+          document.getElementById('presets-section').style.display = '';
           document.getElementById('roll-action-container').style.display = 'flex';
           document.getElementById('previews').style.display = 'none';
           document.getElementById('die-selector-title').textContent = 'Add Die to Pool';
@@ -2190,6 +2232,430 @@
           toast.classList.remove('show');
         }, duration);
       }
+
+      // Default curated dice bag for first-time users
+      const DEFAULT_BAG_DICE = [
+        {
+          type: "d20",
+          materialKey: "gold",
+          styleOptions: {
+            fontFamily: "Outfit",
+            fontColor: "#000000",
+            fontEmbossDepth: 0.7,
+            fontShadowColor: "#003a45",
+            fontShadowRadius: 0.7,
+            faceFillColor: "#ffffff",
+            faceOpacity: 1,
+            edgeColor: "#ff0000",
+            edgeEmbossDepth: -1,
+            bevelColor: "#ffbb00",
+            bevel: 0.01,
+            bevelSegments: 4,
+            roughness: 0,
+            metalness: 1,
+            iridescence: 1,
+            iridescenceIOR: 1.8,
+            sheen: 0.8,
+            sheenColor: "#a8f0ff",
+            font: "Outfit",
+            numFillColor: "#000000",
+            numOcclusionColor: "#003a45",
+            faceColor: "#ffffff",
+            bevelRadius: 0.01
+          },
+          name: "D20 • Royal Gold"
+        },
+        {
+          type: "d8",
+          materialKey: "gold",
+          styleOptions: {
+            fontFamily: "Outfit",
+            fontColor: "#000000",
+            fontEmbossDepth: 0.7,
+            fontShadowColor: "#003a45",
+            fontShadowRadius: 0.7,
+            faceFillColor: "#ffffff",
+            faceOpacity: 1,
+            edgeColor: "#ff0000",
+            edgeEmbossDepth: -1,
+            bevelColor: "#00ffee",
+            bevel: 0.14,
+            bevelSegments: 4,
+            roughness: 0,
+            metalness: 0.9,
+            iridescence: 0.95,
+            iridescenceIOR: 1.95,
+            sheen: 0.1,
+            sheenColor: "#a8f0ff",
+            font: "Outfit",
+            numFillColor: "#000000",
+            numOcclusionColor: "#003a45",
+            faceColor: "#ffffff",
+            bevelRadius: 0.14
+          },
+          name: "D8 • Royal Gold"
+        },
+        {
+          type: "d20",
+          materialKey: "silver",
+          styleOptions: {
+            fontFamily: "Georgia",
+            fontColor: "#3b1824",
+            fontEmbossDepth: -1,
+            fontShadowColor: "#baa3ac",
+            fontShadowRadius: 0.6,
+            faceFillColor: "#fdf3f7",
+            faceOpacity: 1,
+            edgeColor: "#e08ba7",
+            edgeEmbossDepth: 1,
+            bevelColor: "#eed5df",
+            bevel: 0.2,
+            bevelSegments: 4,
+            roughness: null,
+            metalness: null,
+            iridescence: null,
+            iridescenceIOR: null,
+            sheen: null,
+            sheenColor: null,
+            font: "Georgia",
+            numFillColor: "#3b1824",
+            numOcclusionColor: "#baa3ac",
+            faceColor: "#fdf3f7",
+            bevelRadius: 0.2
+          },
+          name: "D20 • Sterling Silver"
+        },
+        {
+          type: "d20",
+          materialKey: "obsidian",
+          styleOptions: {
+            fontFamily: null,
+            fontColor: "#1c160e",
+            fontEmbossDepth: 0,
+            fontShadowColor: "#baa888",
+            fontShadowRadius: 1.2,
+            faceFillColor: "#f8f5eb",
+            faceOpacity: 1,
+            edgeColor: "#c59b27",
+            edgeEmbossDepth: 1,
+            bevelColor: "#2b2318",
+            bevel: 0.09,
+            bevelSegments: 4,
+            roughness: 0.1,
+            metalness: 0.69,
+            iridescence: null,
+            iridescenceIOR: null,
+            sheen: null,
+            sheenColor: null,
+            font: null,
+            numFillColor: "#1c160e",
+            numOcclusionColor: "#baa888",
+            faceColor: "#f8f5eb",
+            bevelRadius: 0.09
+          },
+          name: "D20 • Obsidian Resin"
+        },
+        {
+          type: "d20",
+          materialKey: "ruby",
+          styleOptions: {
+            fontFamily: null,
+            fontColor: "#ff0000",
+            fontEmbossDepth: 0.3,
+            fontShadowColor: "#baa888",
+            fontShadowRadius: 1.2,
+            faceFillColor: "#000000",
+            faceOpacity: 1,
+            edgeColor: "#c59b27",
+            edgeEmbossDepth: 1,
+            bevelColor: "#ff0000",
+            bevel: 0.05,
+            bevelSegments: 4,
+            roughness: 0.1,
+            metalness: 0.76,
+            iridescence: 0.35,
+            iridescenceIOR: 1.85,
+            sheen: 0.05,
+            sheenColor: null,
+            font: null,
+            numFillColor: "#ff0000",
+            numOcclusionColor: "#baa888",
+            faceColor: "#000000",
+            bevelRadius: 0.05
+          },
+          name: "D20 • Translucent Ruby"
+        },
+        {
+          type: "d20",
+          materialKey: "gold",
+          styleOptions: {
+            fontFamily: "Impact",
+            fontColor: "#62283c",
+            fontEmbossDepth: -0.6,
+            fontShadowColor: "#baa3ac",
+            fontShadowRadius: 1.2,
+            faceFillColor: "#fdf3f7",
+            faceOpacity: 1,
+            edgeColor: "#e08ba7",
+            edgeEmbossDepth: 0,
+            bevelColor: "#eed5df",
+            bevel: 0.07,
+            bevelSegments: 2,
+            roughness: 0.19,
+            metalness: 0.56,
+            iridescence: 0.76,
+            iridescenceIOR: 2.04,
+            sheen: 0.31,
+            sheenColor: "#ffd7a8",
+            font: "Impact",
+            numFillColor: "#62283c",
+            numOcclusionColor: "#baa3ac",
+            faceColor: "#fdf3f7",
+            bevelRadius: 0.07
+          },
+          name: "D20 • Royal Gold"
+        },
+        {
+          type: "d20",
+          materialKey: "gold",
+          styleOptions: {
+            fontFamily: "Outfit",
+            fontColor: "#000000",
+            fontEmbossDepth: 0.7,
+            fontShadowColor: "#003a45",
+            fontShadowRadius: 0.7,
+            faceFillColor: "#ffffff",
+            faceOpacity: 1,
+            edgeColor: "#ff0000",
+            edgeEmbossDepth: -0.1,
+            bevelColor: "#ffbb00",
+            bevel: 0.03,
+            bevelSegments: 4,
+            roughness: 0,
+            metalness: 1,
+            iridescence: 1,
+            iridescenceIOR: 1.8,
+            sheen: 0,
+            sheenColor: "#a8f0ff",
+            font: "Outfit",
+            numFillColor: "#000000",
+            numOcclusionColor: "#003a45",
+            faceColor: "#ffffff",
+            bevelRadius: 0.03
+          },
+          name: "D20 • Royal Gold"
+        },
+        {
+          type: "d8",
+          materialKey: "obsidian",
+          styleOptions: {
+            fontFamily: "Cinzel",
+            fontColor: "#1c160e",
+            fontEmbossDepth: -0.6,
+            fontShadowColor: "#baa888",
+            fontShadowRadius: 1.8,
+            faceFillColor: "#f8f5eb",
+            faceOpacity: 1,
+            edgeColor: "#c59b27",
+            edgeEmbossDepth: 1,
+            bevelColor: "#2b2318",
+            bevel: 0.07,
+            bevelSegments: 3,
+            roughness: null,
+            metalness: null,
+            iridescence: null,
+            iridescenceIOR: null,
+            sheen: null,
+            sheenColor: null,
+            font: "Cinzel",
+            numFillColor: "#1c160e",
+            numOcclusionColor: "#baa888",
+            faceColor: "#f8f5eb",
+            bevelRadius: 0.07
+          },
+          name: "D8 • Obsidian Resin"
+        },
+        {
+          type: "d20",
+          materialKey: "gold",
+          styleOptions: {
+            fontFamily: "Outfit",
+            fontColor: null,
+            fontEmbossDepth: 0.7,
+            fontShadowColor: null,
+            fontShadowRadius: 1.7,
+            faceFillColor: null,
+            faceOpacity: 1,
+            edgeColor: "#ffd700",
+            edgeEmbossDepth: -1,
+            bevelColor: null,
+            bevel: 0.04,
+            bevelSegments: 2,
+            roughness: 0.48,
+            metalness: 0.45,
+            iridescence: null,
+            iridescenceIOR: null,
+            sheen: null,
+            sheenColor: null,
+            font: "Outfit",
+            numFillColor: null,
+            numOcclusionColor: null,
+            faceColor: null,
+            bevelRadius: 0.04
+          },
+          name: "D20 • Royal Gold"
+        },
+        {
+          type: "d20",
+          materialKey: "ruby",
+          styleOptions: {
+            fontFamily: "Outfit",
+            fontColor: null,
+            fontEmbossDepth: 0.7,
+            fontShadowColor: null,
+            fontShadowRadius: 0.9,
+            faceFillColor: null,
+            faceOpacity: 1,
+            edgeColor: "#3d0000",
+            edgeEmbossDepth: 0,
+            bevelColor: null,
+            bevel: 0.12,
+            bevelSegments: 4,
+            roughness: null,
+            metalness: null,
+            iridescence: 0,
+            iridescenceIOR: 2.02,
+            sheen: 0,
+            sheenColor: "#d8b4fe",
+            font: "Outfit",
+            numFillColor: null,
+            numOcclusionColor: null,
+            faceColor: null,
+            bevelRadius: 0.12
+          },
+          name: "D20 • Translucent Ruby"
+        },
+        {
+          type: "d20",
+          materialKey: "gold",
+          styleOptions: {
+            fontFamily: "Outfit",
+            fontColor: null,
+            fontEmbossDepth: 0.7,
+            fontShadowColor: null,
+            fontShadowRadius: 1.7,
+            faceFillColor: null,
+            faceOpacity: 1,
+            edgeColor: "#ffd700",
+            edgeEmbossDepth: -1,
+            bevelColor: null,
+            bevel: 0.04,
+            bevelSegments: 2,
+            roughness: 0.48,
+            metalness: 0.45,
+            iridescence: 1,
+            iridescenceIOR: 1.85,
+            sheen: null,
+            sheenColor: null,
+            font: "Outfit",
+            numFillColor: null,
+            numOcclusionColor: null,
+            faceColor: null,
+            bevelRadius: 0.04
+          },
+          name: "D20 • Royal Gold"
+        },
+        {
+          type: "d20",
+          materialKey: "gold",
+          styleOptions: {
+            fontFamily: "Impact",
+            fontColor: "#ffffff",
+            fontEmbossDepth: -0.6,
+            fontShadowColor: "#3a2705",
+            fontShadowRadius: 1.8,
+            faceFillColor: "#14120f",
+            faceOpacity: 1,
+            edgeColor: "#000000",
+            edgeEmbossDepth: 0.3,
+            bevelColor: "#d4af37",
+            bevel: 0.03,
+            bevelSegments: 4,
+            roughness: 0.41,
+            metalness: 0.02,
+            iridescence: 0.92,
+            iridescenceIOR: 1.98,
+            sheen: 0.65,
+            sheenColor: "#ffb3d9",
+            font: "Impact",
+            numFillColor: "#ffffff",
+            numOcclusionColor: "#3a2705",
+            faceColor: "#14120f",
+            bevelRadius: 0.03
+          },
+          name: "D20 • Royal Gold"
+        },
+        {
+          type: "d20",
+          materialKey: "pearl",
+          styleOptions: {
+            fontFamily: "Outfit",
+            fontColor: "#00ff1e",
+            fontEmbossDepth: -0.2,
+            fontShadowColor: "#03301a",
+            fontShadowRadius: 0.7,
+            faceFillColor: "#051f14",
+            faceOpacity: 1,
+            edgeColor: "#702700",
+            edgeEmbossDepth: 0.2,
+            bevelColor: "#000000",
+            bevel: 0.1,
+            bevelSegments: 4,
+            roughness: null,
+            metalness: null,
+            iridescence: 0.86,
+            iridescenceIOR: 2.1,
+            sheen: 0.92,
+            sheenColor: "#ffb3d9",
+            font: "Outfit",
+            numFillColor: "#00ff1e",
+            numOcclusionColor: "#03301a",
+            faceColor: "#051f14",
+            bevelRadius: 0.1
+          },
+          name: "D20 • Opalescent Pearl"
+        },
+        {
+          type: "d20",
+          materialKey: "ruby",
+          styleOptions: {
+            fontFamily: "Outfit",
+            fontColor: null,
+            fontEmbossDepth: 0.7,
+            fontShadowColor: null,
+            fontShadowRadius: 0.9,
+            faceFillColor: null,
+            faceOpacity: 1,
+            edgeColor: "#b80000",
+            edgeEmbossDepth: -0.2,
+            bevelColor: null,
+            bevel: 0.08,
+            bevelSegments: 4,
+            roughness: 0.06,
+            metalness: 0,
+            iridescence: 0,
+            iridescenceIOR: 2.02,
+            sheen: 0,
+            sheenColor: "#d8b4fe",
+            font: "Outfit",
+            numFillColor: null,
+            numOcclusionColor: null,
+            faceColor: null,
+            bevelRadius: 0.08
+          },
+          name: "D20 • Translucent Ruby"
+        }
+      ];
 
       // IndexedDB Storage Manager (App state & Dice bag persistence)
       const StorageManager = {
@@ -4331,31 +4797,33 @@
         });
       }
 
+      // Collapsible Left Panel UI Sections
+      document.querySelectorAll('.collapsible-header').forEach(header => {
+        header.addEventListener('click', (e) => {
+          if (e.target.closest('button, input, select, a')) return;
+          const section = header.closest('.collapsible-section');
+          if (section) {
+            section.classList.toggle('collapsed');
+          }
+        });
+      });
+
       const snapshotModal = document.getElementById('snapshot-modal');
       const closeSnapshot = () => {
         if (snapshotModal) snapshotModal.classList.remove('open');
+        if (diceEngine.isShowcase) {
+          diceEngine.exitShowcaseMode();
+          if (lineupBtn) {
+            lineupBtn.innerHTML = '✨';
+            lineupBtn.classList.remove('active');
+            lineupBtn.title = 'Line up settled dice in front of camera with golden outlines';
+          }
+          isCameraTransitioning = true;
+        }
       };
 
       const closeBtn1 = document.getElementById('close-snapshot-btn');
-      const closeBtn2 = document.getElementById('modal-close-btn');
       if (closeBtn1) closeBtn1.addEventListener('click', closeSnapshot);
-      if (closeBtn2) closeBtn2.addEventListener('click', closeSnapshot);
-
-      const modalTrayBtn = document.getElementById('modal-tray-btn');
-      if (modalTrayBtn) {
-        modalTrayBtn.addEventListener('click', () => {
-          closeSnapshot();
-          if (diceEngine.isShowcase) {
-            diceEngine.exitShowcaseMode();
-            if (lineupBtn) {
-              lineupBtn.innerHTML = '✨';
-              lineupBtn.classList.remove('active');
-              lineupBtn.title = 'Line up settled dice in front of camera with golden outlines';
-            }
-            isCameraTransitioning = true;
-          }
-        });
-      }
 
       if (snapshotModal) {
         snapshotModal.addEventListener('click', (e) => {
@@ -5169,6 +5637,30 @@ dice.on('rollComplete', (res) => {
       async function init() {
         // Initialize IndexedDB StorageManager, Bag UI & Multiplayer
         await StorageManager.init();
+
+        // 1. Populate Default Bag for first time user if not yet initialized
+        let bag = await StorageManager.getBagDice();
+        const hasBagInit = localStorage.getItem('polydice_default_bag_initialized');
+        if (!hasBagInit && (!bag || bag.length === 0)) {
+          for (let i = 0; i < DEFAULT_BAG_DICE.length; i++) {
+            const template = DEFAULT_BAG_DICE[i];
+            const item = {
+              id: 'default_die_' + (i + 1) + '_' + Date.now(),
+              type: template.type,
+              materialKey: template.materialKey,
+              styleOptions: JSON.parse(JSON.stringify(template.styleOptions)),
+              name: template.name,
+              createdAt: Date.now() + i
+            };
+            try {
+              item.thumbnail = renderDieThumbnail(template.type, template.materialKey, item.styleOptions);
+            } catch (_) {}
+            await StorageManager.addDieToBag(item);
+          }
+          localStorage.setItem('polydice_default_bag_initialized', 'true');
+          bag = await StorageManager.getBagDice();
+        }
+
         await updateDiceBagBadge();
         updatePasteButtonState();
         MultiplayerManager.init();
@@ -5190,9 +5682,25 @@ dice.on('rollComplete', (res) => {
             setPhysicsHullUI(savedState.fastPhysics);
           }
         } else {
-          allTypes = ['d4', 'd6', 'd8', 'd10', 'd12', 'd14', 'd16', 'd20', 'd24', 'd30', 'd48', 'd60', 'd100', 'd120'];
-          const mats = ['ruby', 'emerald', 'sapphire', 'pearl', 'gold', 'silver', 'obsidian'];
-          randomMats = allTypes.map(() => mats[Math.floor(Math.random() * mats.length)]);
+          // First-time user experience: spawn RPG7 dice set in the tray using random selections from the bag
+          allTypes = ['d4', 'd6', 'd8', 'd10', 'd10', 'd12', 'd20'];
+          const bagChoices = (bag && bag.length > 0) ? bag : DEFAULT_BAG_DICE;
+          randomMats = [];
+          poolStyles = [];
+          for (let i = 0; i < allTypes.length; i++) {
+            const sample = bagChoices[Math.floor(Math.random() * bagChoices.length)];
+            randomMats.push(sample.materialKey || 'gold');
+            poolStyles.push(sample.styleOptions ? JSON.parse(JSON.stringify(sample.styleOptions)) : null);
+          }
+          currentMaterial = randomMats[randomMats.length - 1] || 'gold';
+          if (poolStyles[poolStyles.length - 1]) {
+            diceEngine.setFaceStyle(poolStyles[poolStyles.length - 1]);
+          }
+          const rpgChip = document.getElementById('preset-rpg');
+          if (rpgChip) {
+            document.querySelectorAll('#presets-section .preset-chip').forEach(c => c.classList.remove('active'));
+            rpgChip.classList.add('active');
+          }
         }
 
         setBevelUI(currentBevel, currentBevelSegments);
