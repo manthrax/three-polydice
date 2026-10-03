@@ -1560,31 +1560,68 @@
       }
     }
 
+    function updateRollButtonLabel() {
+      if (diceEngine.isRolling()) return;
+      const selectedDice = diceEngine.getSelectedDice ? diceEngine.getSelectedDice() : [];
+      const btnText = document.getElementById('roll-btn-text');
+      const hintText = document.getElementById('roll-hint-text');
+
+      if (selectedDice.length > 0) {
+        if (btnText) {
+          btnText.innerHTML = `<img src="assets/dice-icon.png" class="btn-dice-icon" alt="" /> ROLL SELECTED (${selectedDice.length})`;
+        }
+        if (hintText) {
+          hintText.innerHTML = '<kbd class="roll-kbd">SPACE</kbd> to roll selected &bull; Click tray to clear';
+        }
+      } else {
+        if (btnText) {
+          btnText.innerHTML = '<img src="assets/dice-icon.png" class="btn-dice-icon" alt="" /> ROLL DICE';
+        }
+        if (hintText) {
+          hintText.innerHTML = '<kbd class="roll-kbd">SPACE</kbd> to roll &bull; Hold to charge';
+        }
+      }
+    }
+
     function updateScopeBanner() {
-      const selectedDie = diceEngine.getSelectedDie();
+      const selectedDice = diceEngine.getSelectedDice ? diceEngine.getSelectedDice() : (diceEngine.getSelectedDie() ? [diceEngine.getSelectedDie()] : []);
       const scopeBar = document.getElementById('style-scope-bar');
       const scopeName = document.getElementById('style-scope-name');
       const deselectBtn = document.getElementById('scope-deselect-btn');
       const badgeEl = document.getElementById('appearance-style-badge');
-      const activeMatKey = selectedDie ? (selectedDie.materialKey || currentMaterial) : currentMaterial;
-      const matDef = DICE_MATERIALS[activeMatKey] || {};
-      const matName = matDef.name || activeMatKey;
-
-      if (badgeEl) {
-        badgeEl.textContent = matName;
-      }
 
       if (scopeBar && scopeName) {
-        if (selectedDie) {
+        if (selectedDice.length === 1) {
+          const d = selectedDice[0];
+          const matDef = DICE_MATERIALS[d.materialKey || currentMaterial] || {};
+          const matName = matDef.name || d.materialKey || currentMaterial;
           scopeBar.classList.add('has-selection');
-          scopeName.innerHTML = `<span style="color:var(--accent); font-weight:700;">Die #${selectedDie.id} (${selectedDie.type})</span> &bull; ${matName}`;
-          if (deselectBtn) deselectBtn.style.display = 'block';
+          scopeName.innerHTML = `<span style="color:var(--accent); font-weight:700;">Die #${d.id} (${d.type})</span> &bull; ${matName}`;
+          if (deselectBtn) {
+            deselectBtn.style.display = 'block';
+            deselectBtn.textContent = 'Deselect';
+          }
+          if (badgeEl) badgeEl.textContent = matName;
+        } else if (selectedDice.length > 1) {
+          const typesList = selectedDice.map(d => d.type).join(', ');
+          scopeBar.classList.add('has-selection');
+          scopeName.innerHTML = `<span style="color:var(--accent); font-weight:700;">${selectedDice.length} Dice Selected</span> &bull; <span style="color:var(--text-muted); font-size:8.5px;">${typesList}</span>`;
+          if (deselectBtn) {
+            deselectBtn.style.display = 'block';
+            deselectBtn.textContent = 'Deselect All';
+          }
+          if (badgeEl) badgeEl.textContent = `${selectedDice.length} Selected`;
         } else {
+          const matDef = DICE_MATERIALS[currentMaterial] || {};
+          const matName = matDef.name || currentMaterial;
           scopeBar.classList.remove('has-selection');
           scopeName.textContent = `All Dice in Tray (${matName})`;
           if (deselectBtn) deselectBtn.style.display = 'none';
+          if (badgeEl) badgeEl.textContent = matName;
         }
       }
+
+      updateRollButtonLabel();
     }
 
     function updateMaterialUI() {
@@ -1800,9 +1837,11 @@
     }
 
     function applyStyleChange(patch) {
-      const selectedDie = diceEngine.getSelectedDie();
-      if (selectedDie) {
-        diceEngine.setDieStyle(selectedDie, patch);
+      const selectedDice = diceEngine.getSelectedDice ? diceEngine.getSelectedDice() : (diceEngine.getSelectedDie() ? [diceEngine.getSelectedDie()] : []);
+      if (selectedDice.length > 0) {
+        selectedDice.forEach(d => {
+          diceEngine.setDieStyle(d, patch);
+        });
       } else {
         diceEngine.setFaceStyle(patch);
       }
@@ -1919,14 +1958,14 @@
       pool.forEach((type, idx) => {
         const chip = document.createElement('div');
         const correspondingDie = activeDice[idx];
-        const isSelected = selectedDie && correspondingDie && (selectedDie === correspondingDie);
+        const isSelected = diceEngine.isDieSelected ? diceEngine.isDieSelected(correspondingDie) : (selectedDie === correspondingDie);
         const dieMatKey = (correspondingDie && correspondingDie.materialKey) || (diceEngine.poolMaterials && diceEngine.poolMaterials[idx]) || currentMaterial;
         const matDef = DICE_MATERIALS[dieMatKey] || {};
         const swatchColor = matDef.baseColor || '#ff3366';
 
         chip.className = 'pool-chip' + (isSelected ? ' selected' : '');
         chip.style.cursor = 'pointer';
-        chip.title = `Click to select Die #${idx + 1} (${type})`;
+        chip.title = `Click to toggle selection of Die #${idx + 1} (${type})`;
         if (isSelected) {
           chip.style.borderColor = 'var(--accent)';
           chip.style.background = 'rgba(97, 175, 239, 0.22)';
@@ -1942,11 +1981,7 @@
         chip.onclick = (e) => {
           if (e.target.classList.contains('chip-remove')) return;
           if (correspondingDie) {
-            if (diceEngine.getSelectedDie() === correspondingDie) {
-              diceEngine.deselectDie();
-            } else {
-              diceEngine.selectDie(correspondingDie);
-            }
+            diceEngine.toggleDieSelection(correspondingDie);
           }
         };
 
@@ -1988,9 +2023,11 @@
       currentBevel = bevel;
       if (segments != null) currentBevelSegments = segments;
 
-      const selectedDie = diceEngine.getSelectedDie();
-      if (selectedDie) {
-        diceEngine.setDieStyle(selectedDie, { bevel: currentBevel, bevelSegments: currentBevelSegments });
+      const selectedDice = diceEngine.getSelectedDice ? diceEngine.getSelectedDice() : (diceEngine.getSelectedDie() ? [diceEngine.getSelectedDie()] : []);
+      if (selectedDice.length > 0) {
+        selectedDice.forEach(d => {
+          diceEngine.setDieStyle(d, { bevel: currentBevel, bevelSegments: currentBevelSegments });
+        });
       } else {
         diceEngine.setBevel(bevel, currentBevelSegments);
       }
@@ -2052,24 +2089,26 @@
     }
 
     function setDiceMaterialUI(matKey) {
-      const selectedDie = diceEngine.getSelectedDie();
-      if (selectedDie) {
-        if (selectedDie.styleOptions) {
-          delete selectedDie.styleOptions.faceFillColor;
-          delete selectedDie.styleOptions.faceColor;
-          delete selectedDie.styleOptions.edgeColor;
-          delete selectedDie.styleOptions.bevelColor;
-          delete selectedDie.styleOptions.fontColor;
-          delete selectedDie.styleOptions.numFillColor;
-          delete selectedDie.styleOptions.fontShadowColor;
-          delete selectedDie.styleOptions.numOcclusionColor;
-          delete selectedDie.styleOptions.roughness;
-          delete selectedDie.styleOptions.metalness;
-          delete selectedDie.styleOptions.iridescence;
-          delete selectedDie.styleOptions.sheen;
-          selectedDie.styleOptions.material = matKey;
-        }
-        diceEngine.setDieMaterial(selectedDie, matKey);
+      const selectedDice = diceEngine.getSelectedDice ? diceEngine.getSelectedDice() : (diceEngine.getSelectedDie() ? [diceEngine.getSelectedDie()] : []);
+      if (selectedDice.length > 0) {
+        selectedDice.forEach(d => {
+          if (d.styleOptions) {
+            delete d.styleOptions.faceFillColor;
+            delete d.styleOptions.faceColor;
+            delete d.styleOptions.edgeColor;
+            delete d.styleOptions.bevelColor;
+            delete d.styleOptions.fontColor;
+            delete d.styleOptions.numFillColor;
+            delete d.styleOptions.fontShadowColor;
+            delete d.styleOptions.numOcclusionColor;
+            delete d.styleOptions.roughness;
+            delete d.styleOptions.metalness;
+            delete d.styleOptions.iridescence;
+            delete d.styleOptions.sheen;
+            d.styleOptions.material = matKey;
+          }
+          diceEngine.setDieMaterial(d, matKey);
+        });
       } else {
         currentMaterial = matKey;
         diceEngine.activeDiceInstances.forEach(d => {
@@ -2155,7 +2194,7 @@
     // =========================================================================
 
     // Wire Engine Events to Host UI
-    diceEngine.on('rollStart', ({ power }) => {
+    diceEngine.on('rollStart', ({ power, partial, dice: rolledDice }) => {
       document.getElementById('roll-btn').disabled = true;
       document.getElementById('status-dot').className = 'status-dot rolling';
 
@@ -2163,13 +2202,16 @@
       const targetVal = tInputStart ? tInputStart.value.trim() : '';
       const isTarget = targetVal && diceEngine.parseTargetRollString(targetVal);
 
-      document.getElementById('status-text').textContent = isTarget ? 'Rolling target...' : (power > 1.4 ? `Rolling (Power: ${power.toFixed(1)}x)...` : 'Rolling dice...');
+      const isPartial = partial && rolledDice && rolledDice.length > 0;
+      const count = isPartial ? rolledDice.length : diceEngine.getActiveDice().length;
+
+      document.getElementById('status-text').textContent = isTarget ? 'Rolling target...' : (isPartial ? `Rolling (${count} selected)...` : (power > 1.4 ? `Rolling (Power: ${power.toFixed(1)}x)...` : 'Rolling dice...'));
       document.getElementById('result-banner').classList.remove('visible');
 
       const btnText = document.getElementById('roll-btn-text');
       const hintText = document.getElementById('roll-hint-text');
-      if (btnText) btnText.innerHTML = isTarget ? '🎯 ROLLING TARGET...' : '<img src="assets/dice-icon.png" class="btn-dice-icon" alt="" /> ROLLING...';
-      if (hintText) hintText.innerHTML = power > 1.4 ? `Thrown with ${power.toFixed(1)}x power` : 'Rolling in tray...';
+      if (btnText) btnText.innerHTML = isTarget ? '🎯 ROLLING TARGET...' : (isPartial ? `<img src="assets/dice-icon.png" class="btn-dice-icon" alt="" /> ROLLING (${count})...` : '<img src="assets/dice-icon.png" class="btn-dice-icon" alt="" /> ROLLING...');
+      if (hintText) hintText.innerHTML = isPartial ? `Rolling ${count} selected dice...` : (power > 1.4 ? `Thrown with ${power.toFixed(1)}x power` : 'Rolling in tray...');
       updatePoolChipsUI();
     });
 
@@ -2179,14 +2221,12 @@
       document.getElementById('status-text').textContent = 'Settled';
 
       const chargeBar = document.getElementById('roll-charge-bar');
-      const btnText = document.getElementById('roll-btn-text');
-      const hintText = document.getElementById('roll-hint-text');
       if (chargeBar) {
         chargeBar.style.width = '0%';
         chargeBar.style.background = 'linear-gradient(90deg, rgba(97, 175, 239, 0.45) 0%, rgba(229, 192, 123, 0.85) 100%)';
       }
-      if (btnText) btnText.innerHTML = '<img src="assets/dice-icon.png" class="btn-dice-icon" alt="" /> ROLL DICE';
-      if (hintText) hintText.innerHTML = '<kbd class="roll-kbd">SPACE</kbd> to roll &bull; Hold to charge';
+
+      updateRollButtonLabel();
 
       document.getElementById('result-total-val').textContent = result.total;
       document.getElementById('result-breakdown-val').textContent = result.summary;
@@ -4043,15 +4083,11 @@
           }
         }
       } else if (pointerDownDie && !isDraggingDie) {
-        // Normal click selection
-        if (diceEngine.getSelectedDie() === pointerDownDie) {
-          diceEngine.deselectDie();
-        } else {
-          diceEngine.selectDie(pointerDownDie);
-        }
+        // Toggle selection for clicked die
+        diceEngine.toggleDieSelection(pointerDownDie);
       } else if (!pointerDownDie && Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y) < 7 && currentMode === 'tray') {
-        // Click on empty space
-        diceEngine.deselectDie();
+        // Click on empty tray space clears selection
+        diceEngine.clearSelection();
       }
 
       if (isDraggingDie) {
@@ -4074,6 +4110,7 @@
       updateMaterialUI();
       updateFaceStyleUI();
       updatePoolChipsUI();
+      updateRollButtonLabel();
     });
     diceEngine.on('dieMaterialChange', () => {
       updateMaterialUI();
@@ -4118,10 +4155,10 @@
       }
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && currentMode === 'tray' && !diceEngine.isRolling()) {
-        const selectedDie = diceEngine.getSelectedDie();
-        if (selectedDie) {
+        const selectedDice = diceEngine.getSelectedDice ? diceEngine.getSelectedDice() : (diceEngine.getSelectedDie() ? [diceEngine.getSelectedDie()] : []);
+        if (selectedDice.length > 0) {
           e.preventDefault();
-          diceEngine.removeDie(selectedDie);
+          selectedDice.forEach(d => diceEngine.removeDie(d));
           updatePoolChipsUI();
           updateMaterialUI();
           updateFaceStyleUI();

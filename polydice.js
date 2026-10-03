@@ -1946,6 +1946,7 @@ export class PolyDice {
     this.poolMaterials = options.initialMaterials ? [...options.initialMaterials] : [];
     this.poolStyles = options.initialStyles ? [...options.initialStyles] : [];
     this.selectedDie = null;
+    this.selectedDice = new Set();
     this.activeDiceInstances = [];
     this.isRollingState = false;
     this.rollStartTime = 0;
@@ -2759,25 +2760,79 @@ export class PolyDice {
     return d ? (d.materialKey || this.materialKey) : this.materialKey;
   }
 
-  selectDie(dieOrId) {
+  selectDie(dieOrId, multi = false) {
     const d = typeof dieOrId === 'object' ? dieOrId : this.activeDiceInstances.find(x => x.id === dieOrId);
-    if (this.selectedDie && this.selectedDie !== d) {
-      this._updateDieSelectionVisual(this.selectedDie, false);
+    if (!d) return null;
+    if (!multi) {
+      this.selectedDice.forEach(oldDie => {
+        if (oldDie !== d) this._updateDieSelectionVisual(oldDie, false);
+      });
+      this.selectedDice.clear();
     }
-    this.selectedDie = d || null;
-    if (this.selectedDie) {
-      this._updateDieSelectionVisual(this.selectedDie, true);
+    this.selectedDice.add(d);
+    this.selectedDie = d;
+    this._updateDieSelectionVisual(d, true);
+    this.emit('selectionChange', { selectedDice: this.getSelectedDice(), selectedDie: this.selectedDie });
+    return d;
+  }
+
+  toggleDieSelection(dieOrId) {
+    const d = typeof dieOrId === 'object' ? dieOrId : this.activeDiceInstances.find(x => x.id === dieOrId);
+    if (!d) return false;
+    if (this.selectedDice.has(d)) {
+      this.selectedDice.delete(d);
+      this._updateDieSelectionVisual(d, false);
+      const remaining = [...this.selectedDice];
+      this.selectedDie = remaining.length > 0 ? remaining[remaining.length - 1] : null;
+      this.emit('selectionChange', { selectedDice: remaining, selectedDie: this.selectedDie });
+      return false;
+    } else {
+      this.selectedDice.add(d);
+      this.selectedDie = d;
+      this._updateDieSelectionVisual(d, true);
+      this.emit('selectionChange', { selectedDice: this.getSelectedDice(), selectedDie: this.selectedDie });
+      return true;
     }
-    this.emit('selectionChange', this.selectedDie);
+  }
+
+  isDieSelected(dieOrId) {
+    const d = typeof dieOrId === 'object' ? dieOrId : this.activeDiceInstances.find(x => x.id === dieOrId);
+    return d ? this.selectedDice.has(d) : false;
+  }
+
+  deselectDie(dieOrId = null) {
+    if (dieOrId != null) {
+      const d = typeof dieOrId === 'object' ? dieOrId : this.activeDiceInstances.find(x => x.id === dieOrId);
+      if (d && this.selectedDice.has(d)) {
+        this.selectedDice.delete(d);
+        this._updateDieSelectionVisual(d, false);
+      }
+    } else {
+      this.selectedDice.forEach(d => {
+        this._updateDieSelectionVisual(d, false);
+      });
+      this.selectedDice.clear();
+    }
+    const remaining = [...this.selectedDice];
+    this.selectedDie = remaining.length > 0 ? remaining[remaining.length - 1] : null;
+    this.emit('selectionChange', { selectedDice: remaining, selectedDie: this.selectedDie });
     return this.selectedDie;
   }
 
-  deselectDie() {
-    return this.selectDie(null);
+  clearSelection() {
+    return this.deselectDie(null);
   }
 
   getSelectedDie() {
     return this.selectedDie;
+  }
+
+  getSelectedDice() {
+    return [...this.selectedDice];
+  }
+
+  hasSelectedDice() {
+    return this.selectedDice.size > 0;
   }
 
   _updateDieSelectionVisual(d, isSelected) {
@@ -3107,8 +3162,8 @@ export class PolyDice {
     }
 
     // Deselect if currently selected
-    if (this.selectedDie === d) {
-      this.deselectDie();
+    if (this.selectedDice.has(d)) {
+      this.deselectDie(d);
     }
 
     // Remove physics rigid body
@@ -3605,6 +3660,75 @@ export class PolyDice {
     return result;
   }
 
+  rollDiceInstances(diceList, options = {}) {
+    if (!diceList || diceList.length === 0) return Promise.resolve(null);
+    const power = options.power != null ? options.power : 1.0;
+
+    if (this.audioEnabled) {
+      this.soundSystem.init();
+      if (typeof this.soundSystem.playSpawnCue === 'function') {
+        this.soundSystem.playSpawnCue();
+      }
+    }
+    if (this.isShowcase) {
+      this.exitShowcaseMode();
+    }
+
+    const baseThrowSpeed = 6.0 + (power - 1.0) * 12.0;
+    diceList.forEach(d => {
+      if (!d || !d.body) return;
+      const trans = d.body.getWorldTransform();
+      const currentPos = trans.getOrigin();
+
+      const spawnX = Math.max(-3.8, Math.min(3.8, currentPos.x() + (Math.random() - 0.5) * 1.5));
+      const spawnY = Math.min(7.8, Math.max(4.6, currentPos.y() + 3.2 + Math.random() * 1.2));
+      const spawnZ = Math.max(-3.4, Math.min(3.4, currentPos.z() + (Math.random() - 0.5) * 1.5));
+      trans.setOrigin(new this.AmmoLib.btVector3(spawnX, spawnY, spawnZ));
+
+      const randQuat = new this.THREE.Quaternion().setFromEuler(new this.THREE.Euler(
+        Math.random() * Math.PI * 2,
+        Math.random() * Math.PI * 2,
+        Math.random() * Math.PI * 2
+      ));
+      trans.setRotation(new this.AmmoLib.btQuaternion(randQuat.x, randQuat.y, randQuat.z, randQuat.w));
+      d.body.setWorldTransform(trans);
+      if (d.body.getMotionState()) {
+        d.body.getMotionState().setWorldTransform(trans);
+      }
+
+      const fanAngle = Math.random() * Math.PI * 2;
+      const dieSpeed = baseThrowSpeed + (Math.random() - 0.5) * 2.5;
+      const linVelX = Math.cos(fanAngle) * dieSpeed;
+      const linVelZ = Math.sin(fanAngle) * dieSpeed;
+      const linVelY = -2.8 - Math.random() * 2.6;
+      d.body.setLinearVelocity(new this.AmmoLib.btVector3(linVelX, linVelY, linVelZ));
+
+      const angVel = (18 + Math.random() * 18) * (0.8 + power * 0.6);
+      d.body.setAngularVelocity(new this.AmmoLib.btVector3(
+        (Math.random() - 0.5) * angVel,
+        (Math.random() - 0.5) * angVel,
+        (Math.random() - 0.5) * angVel
+      ));
+
+      d.body.activate(true);
+      d.settled = false;
+      d.settleFrames = 0;
+    });
+
+    // Also activate remaining bodies so physical contact works naturally
+    this.activeDiceInstances.forEach(d => {
+      if (d.body) d.body.activate(true);
+    });
+
+    this.isRollingState = true;
+    this.rollStartTime = performance.now();
+    this.emit('rollStart', { pool: diceList.map(d => d.type), power, partial: true, dice: diceList });
+
+    return new Promise((resolve) => {
+      this.currentRollResolve = resolve;
+    });
+  }
+
   roll(options = {}) {
     if (options.instant || !this.AmmoLib) {
       return Promise.resolve(this.rollInstant(options));
@@ -3613,6 +3737,11 @@ export class PolyDice {
     const power = options.power != null ? options.power : 1.0;
     const targets = options.targets || null;
     const dice = options.dice || null;
+
+    const selectedDice = this.getSelectedDice();
+    if (options.all !== true && selectedDice.length > 0 && !dice && !targets) {
+      return this.rollDiceInstances(selectedDice, { power });
+    }
 
     if (dice && Array.isArray(dice) && dice.length > 0) {
       this.dicePool = [...dice];
