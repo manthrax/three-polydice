@@ -1524,35 +1524,34 @@
     /* ========================================================================= */
 
     .mp-room-overlay {
-      position: fixed;
-      bottom: 20px;
-      right: 185px;
-      z-index: 50;
-      background: rgba(14, 18, 25, 0.88);
-      border: 1.5px solid rgba(97, 175, 239, 0.45);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: 12px;
-      padding: 8px 14px;
+      position: relative;
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(14, 18, 25, 0.85);
+      border: 1px solid rgba(97, 175, 239, 0.35);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-radius: 4px;
+      padding: 5px 8px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: space-between;
+      gap: 6px;
       cursor: pointer;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(97, 175, 239, 0.12);
-      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+      transition: all 0.18s ease;
       user-select: none;
     }
 
     .mp-room-overlay:hover {
       background: rgba(22, 28, 40, 0.95);
       border-color: var(--accent);
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 0 20px rgba(97, 175, 239, 0.3);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 10px rgba(97, 175, 239, 0.2);
     }
 
     .mp-room-overlay.in-room {
       border-color: #98c379;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(152, 195, 121, 0.2);
+      box-shadow: 0 0 8px rgba(152, 195, 121, 0.25);
     }
 
     .mp-room-badge {

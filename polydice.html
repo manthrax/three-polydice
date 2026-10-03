@@ -44,33 +44,6 @@
     </div>
 
     <div class="header-actions">
-      <div class="tab-switch">
-        <button id="tab-tray" class="tab-btn active" title="Physics-driven dice tray">
-          <span>🎯</span> Tray
-        </button>
-        <button id="tab-inspector" class="tab-btn" title="Inspect individual polyhedral die">
-          <span>🔍</span> Inspector
-        </button>
-      </div>
-
-      <button id="mp-header-btn" class="tab-btn"
-        style="background: rgba(13,16,22,0.9); border: 1.5px solid rgba(97, 175, 239, 0.45); color: #fff;"
-        title="Multiplayer Tabletop Room: Share trays, host turns, and roll together">
-        <span>🌐</span> <span id="mp-header-btn-text">Multiplayer</span>
-      </button>
-
-      <button id="config-btn" class="tab-btn"
-        style="background: rgba(13,16,22,0.9); border: 1px solid rgba(97, 175, 239, 0.4); color: var(--accent);"
-        title="Open Theming & Library Configurator (Generate JS Code, Target Strings, JSON)">
-        <span>⚙️</span> Theming & Config
-      </button>
-
-      <button id="docs-btn" class="tab-btn"
-        style="background: rgba(13,16,22,0.9); border: 1px solid var(--panel-border);"
-        title="View features, architecture & API documentation (Human & LLM friendly)">
-        <span>📖</span> Docs & API
-      </button>
-
       <button id="sound-btn" class="tab-btn sound-btn"
         style="background: rgba(13,16,22,0.9); border: 1px solid var(--panel-border);"
         title="Toggle collision sound effects">
@@ -80,10 +53,53 @@
   </header>
 
   <!-- Physics & Inspector UI Panel (Compact & Minimal) -->
-  <div id="ui-panel">
+  <div id="ui-panel" class="collapsed">
     <div class="panel-header-row">
       <div class="section-title" style="margin: 0;">Dice Controls</div>
-      <button class="panel-toggle-btn" id="panel-toggle-btn" title="Collapse / Expand panel">◀</button>
+      <button class="panel-toggle-btn" id="panel-toggle-btn" title="Collapse / Expand panel">▶</button>
+    </div>
+
+    <!-- View Modes, Multiplayer & Configuration Tools Section -->
+    <div id="view-tools-section" class="collapsible-section collapsed" style="margin-top: 2px;">
+      <div class="section-title collapsible-header" style="margin-bottom: 3px;">
+        <div class="collapsible-title-wrap">
+          <span class="collapse-arrow">▸</span>
+          <span>View & Tools</span>
+        </div>
+      </div>
+      <div class="collapsible-body" style="gap: 5px;">
+        <div class="tab-switch" style="width: 100%; box-sizing: border-box; display: flex; padding: 2px;">
+          <button id="tab-tray" class="tab-btn active" style="flex: 1; justify-content: center; padding: 4px 2px; font-size: 10px;" title="Physics-driven dice tray">
+            <span>🎯</span> Tray
+          </button>
+          <button id="tab-inspector" class="tab-btn" style="flex: 1; justify-content: center; padding: 4px 2px; font-size: 10px;" title="Inspect individual polyhedral die">
+            <span>🔍</span> Inspector
+          </button>
+        </div>
+
+        <div id="mp-room-overlay" class="mp-room-overlay" title="Multiplayer Room: Connect, view remote trays, and roll with friends">
+          <div style="display: flex; align-items: center; gap: 7px; overflow: hidden;">
+            <span style="font-size: 13px; flex-shrink: 0;">🌐</span>
+            <div style="display: flex; flex-direction: column; line-height: 1.15; overflow: hidden; text-align: left;">
+              <span id="mp-room-title" style="font-weight: 700; font-size: 10.5px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Multiplayer</span>
+              <span id="mp-room-sub" style="font-size: 8px; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Click to Join / Host</span>
+            </div>
+          </div>
+          <span id="mp-room-badge" class="mp-room-badge" style="display: none; margin-left: auto; flex-shrink: 0;">0</span>
+        </div>
+
+        <button id="config-btn" class="small-btn"
+          style="width: 100%; display: flex; align-items: center; gap: 6px; padding: 4px 8px; font-size: 10px; background: rgba(97, 175, 239, 0.12); border-color: rgba(97, 175, 239, 0.35); color: var(--accent); font-weight: 600; text-align: left;"
+          title="Open Theming & Library Configurator (Generate JS Code, Target Strings, JSON)">
+          <span>⚙️</span> Theming & Config
+        </button>
+
+        <button id="docs-btn" class="small-btn"
+          style="width: 100%; display: flex; align-items: center; gap: 6px; padding: 4px 8px; font-size: 10px; background: rgba(35, 42, 54, 0.75); border-color: rgba(255, 255, 255, 0.12); color: #fff; font-weight: 600; text-align: left;"
+          title="View features, architecture & API documentation (Human & LLM friendly)">
+          <span>📖</span> Docs & API
+        </button>
+      </div>
     </div>
 
     <div id="pool-section" class="collapsible-section collapsed">
@@ -1005,16 +1021,6 @@
       <button id="return-my-tray-btn" class="small-btn" style="padding: 2px 8px; font-size: 9.5px; background: rgba(97, 175, 239, 0.2); border-color: var(--accent); color: var(--accent);">
         ⬅ Back to My Tray
       </button>
-    </div>
-
-    <!-- Floating Multiplayer Room Overlay Widget -->
-    <div id="mp-room-overlay" class="mp-room-overlay" title="Multiplayer Room: Connect, view remote trays, and roll with friends">
-      <span style="font-size: 18px;">🌐</span>
-      <div style="display: flex; flex-direction: column; line-height: 1.15;">
-        <span id="mp-room-title" style="font-weight: 700; font-size: 11.5px; color: #fff;">Multiplayer</span>
-        <span id="mp-room-sub" style="font-size: 9px; color: var(--accent);">Click to Join / Host</span>
-      </div>
-      <span id="mp-room-badge" class="mp-room-badge" style="display: none;">0</span>
     </div>
 
     <!-- Multiplayer Room Modal -->
@@ -4791,9 +4797,32 @@
       const panelToggleBtn = document.getElementById('panel-toggle-btn');
       const uiPanel = document.getElementById('ui-panel');
       if (panelToggleBtn && uiPanel) {
-        panelToggleBtn.addEventListener('click', () => {
+        // Preference check: default to closed on first visit
+        const savedPanelState = localStorage.getItem('polydice_panel_collapsed');
+        if (savedPanelState !== null) {
+          const isCollapsed = savedPanelState === 'true';
+          uiPanel.classList.toggle('collapsed', isCollapsed);
+          panelToggleBtn.textContent = isCollapsed ? '▶' : '◀';
+        } else {
+          // Default left panel to closed on first visit
+          uiPanel.classList.add('collapsed');
+          panelToggleBtn.textContent = '▶';
+        }
+
+        panelToggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
           uiPanel.classList.toggle('collapsed');
-          panelToggleBtn.textContent = uiPanel.classList.contains('collapsed') ? '▶' : '◀';
+          const isCollapsed = uiPanel.classList.contains('collapsed');
+          panelToggleBtn.textContent = isCollapsed ? '▶' : '◀';
+          localStorage.setItem('polydice_panel_collapsed', isCollapsed ? 'true' : 'false');
+        });
+
+        uiPanel.addEventListener('click', (e) => {
+          if (uiPanel.classList.contains('collapsed')) {
+            uiPanel.classList.remove('collapsed');
+            panelToggleBtn.textContent = '◀';
+            localStorage.setItem('polydice_panel_collapsed', 'false');
+          }
         });
       }
 
